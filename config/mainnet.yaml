@@ -1,0 +1,62 @@
+# Cardano Node Configuration for Mainnet
+
+# Topology
+TopologySource:
+  remoteSource:
+    url: https://api.clio.one/htopology/v1/fetch/
+    headers: {}
+
+# Logging
+setupScribes:
+  - scKind: StdoutSK
+    scName: stdout
+    scFormat: ScText
+    scRotation: null
+
+# P2P
+EnableP2P: true
+
+# Protocol
+Protocol: Cardano
+
+# Block Production
+ByronGenesisFile: /config/byron-genesis.json
+ShelleyGenesisFile: /config/shelley-genesis.json
+AlonzoGenesisFile: /config/alonzo-genesis.json
+ConwayGenesisFile: /config/conway-genesis.json
+
+# Node
+RequiresNetworkMagic: RequiresNoMagic
+LastKnownBlockVersion-Major: 8
+LastKnownBlockVersion-Minor: 0
+LastKnownBlockVersion-Alt: 0
+
+# Tracing
+TraceBlockFetchClient: true
+TraceBlockFetchServer: true
+TraceChainSyncClient: true
+TraceChainSyncHeaderServer: true
+TraceChainSyncServer: true
+TraceConnectionManager: true
+TraceDNSResolver: true
+TraceDNSSubscription: true
+TraceErrorPolicy: true
+TraceForge: true
+TraceHandshake: true
+TraceIpSubscription: true
+TraceLocalChainSyncProtocol: true
+TraceLocalErrorPolicy: true
+TraceLocalHandshake: false
+TraceLocalTxSubmissionProtocol: true
+TraceLocalTxSubmissionServer: true
+TraceMempool: true
+TraceMux: false
+TraceTxInbound: true
+TraceTxOutbound: true
+TraceTxSubmissionProtocol: true
+TracingVerbosity: NormalVerbosity
+
+# Misc
+TurnOnLogMetrics: true
+TurnOnLogging: true
+ViewMode: LiveView
