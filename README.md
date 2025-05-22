@@ -60,6 +60,16 @@ cardano-node (relay)
    docker-compose up -d
    ```
 
+5. Test the local setup:
+   ```bash
+   ./test-local-setup.sh
+   ```
+
+6. Deploy to Railway (optional):
+   ```bash
+   ./deploy-to-railway.sh
+   ```
+
 ## Components
 
 ### Kupo Sync Worker
@@ -105,7 +115,45 @@ npm run dev
 
 ## Deployment
 
-This project is designed to be deployed on Railway. See the `cabal-kupo-setup-progress.md` file for detailed deployment steps.
+This project is designed to be deployed on Railway. You can use the provided deployment script:
+
+```bash
+./deploy-to-railway.sh
+```
+
+The script will:
+1. Initialize a Railway project
+2. Create the required volumes
+3. Add PostgreSQL
+4. Initialize the database schema
+5. Deploy all services
+6. Set up health monitoring (optional)
+
+For detailed deployment steps, see the `cabal-kupo-setup-progress.md` file.
+
+## Monitoring
+
+A health monitoring script is included to check the status of all components:
+
+```bash
+./health-monitor.sh
+```
+
+You can set up a cron job to run this script regularly:
+
+```bash
+# Add to crontab to run every 15 minutes
+*/15 * * * * /path/to/health-monitor.sh >> /path/to/health-monitor.log 2>&1
+```
+
+The script checks:
+- Kupo health status
+- Kupo synchronization with cardano-node
+- API health status
+- PostgreSQL replication lag (if applicable)
+- Wallet edge updates
+
+Alerts can be sent to a Discord webhook if configured in the `.env` file.
 
 ## License
 

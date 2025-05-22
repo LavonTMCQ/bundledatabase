@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import { Pool } from 'pg';
+import mercurius from 'mercurius';
+import { schema, resolvers } from './schema';
 
 // Initialize PostgreSQL connection pool
 const pool = new Pool({
@@ -12,6 +14,16 @@ const fastify = Fastify({
   logger: true
 });
 
+// Register GraphQL plugin
+fastify.register(mercurius, {
+  schema,
+  resolvers,
+  graphiql: true, // Enable GraphiQL interface for development
+  context: () => {
+    return { pg: pool };
+  }
+});
+
 // Health check endpoint
 fastify.get('/health', async () => {
   return { status: 'ready' };
@@ -20,18 +32,18 @@ fastify.get('/health', async () => {
 // Get token graph endpoint
 fastify.get('/token/:policy/graph', async (request, reply) => {
   const { policy } = request.params as { policy: string };
-  
+
   try {
     const { rows } = await pool.query(`
-      SELECT 
-        w.stake_cred, 
-        cm.cluster_id, 
+      SELECT
+        w.stake_cred,
+        cm.cluster_id,
         c.risk_score,
         c.tags,
         json_agg(
           json_build_object(
-            'dst', e.dst, 
-            'relation', e.relation, 
+            'dst', e.dst,
+            'relation', e.relation,
             'weight', e.weight
           )
         ) as edges
@@ -43,7 +55,7 @@ fastify.get('/token/:policy/graph', async (request, reply) => {
       WHERE th.policy_id = $1
       GROUP BY w.stake_cred, cm.cluster_id, c.risk_score, c.tags
     `, [policy]);
-    
+
     return rows;
   } catch (error) {
     fastify.log.error(error);
@@ -55,9 +67,9 @@ fastify.get('/token/:policy/graph', async (request, reply) => {
 fastify.get('/tokens', async (request, reply) => {
   try {
     const { rows } = await pool.query(`
-      SELECT 
-        t.policy_id, 
-        t.asset_name, 
+      SELECT
+        t.policy_id,
+        t.asset_name,
         t.decimals,
         t.market_cap_ada,
         COUNT(DISTINCT th.stake_cred) as holder_count,
@@ -69,7 +81,7 @@ fastify.get('/tokens', async (request, reply) => {
       GROUP BY t.policy_id, t.asset_name, t.decimals, t.market_cap_ada
       ORDER BY t.first_seen DESC
     `);
-    
+
     return rows;
   } catch (error) {
     fastify.log.error(error);
@@ -80,25 +92,25 @@ fastify.get('/tokens', async (request, reply) => {
 // Get cluster details endpoint
 fastify.get('/cluster/:id', async (request, reply) => {
   const { id } = request.params as { id: string };
-  
+
   try {
     // Get cluster details
     const { rows: clusterDetails } = await pool.query(`
-      SELECT 
-        c.cluster_id, 
-        c.risk_score, 
+      SELECT
+        c.cluster_id,
+        c.risk_score,
         c.tags
       FROM cluster c
       WHERE c.cluster_id = $1
     `, [id]);
-    
+
     if (clusterDetails.length === 0) {
       return reply.status(404).send({ error: 'Cluster not found' });
     }
-    
+
     // Get cluster members
     const { rows: members } = await pool.query(`
-      SELECT 
+      SELECT
         w.stake_cred,
         w.flags,
         json_agg(
@@ -113,7 +125,7 @@ fastify.get('/cluster/:id', async (request, reply) => {
       WHERE cm.cluster_id = $1
       GROUP BY w.stake_cred, w.flags
     `, [id]);
-    
+
     // Get risk score history
     const { rows: history } = await pool.query(`
       SELECT score, ts
@@ -122,7 +134,7 @@ fastify.get('/cluster/:id', async (request, reply) => {
       ORDER BY ts DESC
       LIMIT 30
     `, [id]);
-    
+
     return {
       ...clusterDetails[0],
       members,
@@ -137,7 +149,7 @@ fastify.get('/cluster/:id', async (request, reply) => {
 // Start the server
 const start = async () => {
   try {
-    await fastify.listen({ 
+    await fastify.listen({
       port: parseInt(process.env.PORT || '4000', 10),
       host: '0.0.0.0'
     });
