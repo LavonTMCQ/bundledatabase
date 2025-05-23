@@ -1,0 +1,15 @@
+{
+  "name": "cabal-cluster-analysis",
+  "version": "1.0.0",
+  "description": "Cluster analysis and risk scoring for Cabal database",
+  "main": "cluster.js",
+  "scripts": {
+    "cluster": "node cluster.js",
+    "risk": "node risk.js",
+    "cron": "./cron.sh"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
+  }
+}

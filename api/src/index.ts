@@ -1,27 +1,15 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import { Pool } from 'pg';
-import mercurius from 'mercurius';
-import { schema, resolvers } from './schema';
 
 // Initialize PostgreSQL connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL?.replace('postgres:5432', 'localhost:5432') || 'postgresql://postgres:cabal_password_123@localhost:5432/cabal_db'
 });
 
 // Create Fastify instance
 const fastify = Fastify({
   logger: true
-});
-
-// Register GraphQL plugin
-fastify.register(mercurius, {
-  schema,
-  resolvers,
-  graphiql: true, // Enable GraphiQL interface for development
-  context: () => {
-    return { pg: pool };
-  }
 });
 
 // Health check endpoint

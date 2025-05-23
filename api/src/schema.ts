@@ -1,7 +1,7 @@
-import { gql } from 'mercurius';
+// GraphQL schema definition
 
 // Define GraphQL schema
-export const schema = gql`
+export const schema = `
   # Token type
   type Token {
     policyId: String!
@@ -58,22 +58,22 @@ export const schema = gql`
   type Query {
     # Get all tokens
     tokens: [Token]
-    
+
     # Get token by policy ID
     token(policyId: String!): Token
-    
+
     # Get wallet graph for a token
     tokenGraph(policyId: String!): [Wallet]
-    
+
     # Get cluster by ID
     cluster(clusterId: Int!): Cluster
-    
+
     # Get clusters with risk score above threshold
     highRiskClusters(threshold: Float = 5): [Cluster]
-    
+
     # Get wallet by stake credential
     wallet(stakeCred: String!): Wallet
-    
+
     # Search wallets by flags
     searchWallets(flags: JSON): [Wallet]
   }
@@ -85,9 +85,9 @@ export const resolvers = {
     // Get all tokens
     tokens: async (_: any, __: any, { pg }: { pg: any }) => {
       const { rows } = await pg.query(`
-        SELECT 
-          t.policy_id as "policyId", 
-          t.asset_name as "assetName", 
+        SELECT
+          t.policy_id as "policyId",
+          t.asset_name as "assetName",
           t.decimals,
           t.market_cap_ada as "marketCapAda",
           COUNT(DISTINCT th.stake_cred) as "holderCount",
@@ -100,16 +100,16 @@ export const resolvers = {
         GROUP BY t.policy_id, t.asset_name, t.decimals, t.market_cap_ada, t.first_seen
         ORDER BY t.first_seen DESC
       `);
-      
+
       return rows;
     },
-    
+
     // Get token by policy ID
     token: async (_: any, { policyId }: { policyId: string }, { pg }: { pg: any }) => {
       const { rows } = await pg.query(`
-        SELECT 
-          t.policy_id as "policyId", 
-          t.asset_name as "assetName", 
+        SELECT
+          t.policy_id as "policyId",
+          t.asset_name as "assetName",
           t.decimals,
           t.market_cap_ada as "marketCapAda",
           COUNT(DISTINCT th.stake_cred) as "holderCount",
@@ -122,21 +122,21 @@ export const resolvers = {
         WHERE t.policy_id = $1
         GROUP BY t.policy_id, t.asset_name, t.decimals, t.market_cap_ada, t.first_seen
       `, [policyId]);
-      
+
       return rows[0];
     },
-    
+
     // Get wallet graph for a token
     tokenGraph: async (_: any, { policyId }: { policyId: string }, { pg }: { pg: any }) => {
       const { rows } = await pg.query(`
-        SELECT 
-          w.stake_cred as "stakeCred", 
+        SELECT
+          w.stake_cred as "stakeCred",
           w.flags,
           cm.cluster_id as "clusterId",
           json_agg(
             json_build_object(
-              'dst', e.dst, 
-              'relation', e.relation, 
+              'dst', e.dst,
+              'relation', e.relation,
               'weight', e.weight
             )
           ) as edges
@@ -147,125 +147,125 @@ export const resolvers = {
         WHERE th.policy_id = $1
         GROUP BY w.stake_cred, w.flags, cm.cluster_id
       `, [policyId]);
-      
+
       return rows;
     },
-    
+
     // Get cluster by ID
     cluster: async (_: any, { clusterId }: { clusterId: number }, { pg }: { pg: any }) => {
       // Get cluster details
       const { rows: clusterDetails } = await pg.query(`
-        SELECT 
-          c.cluster_id as "clusterId", 
-          c.risk_score as "riskScore", 
+        SELECT
+          c.cluster_id as "clusterId",
+          c.risk_score as "riskScore",
           c.tags
         FROM cluster c
         WHERE c.cluster_id = $1
       `, [clusterId]);
-      
+
       if (clusterDetails.length === 0) {
         return null;
       }
-      
+
       // Get risk history
       const { rows: history } = await pg.query(`
-        SELECT 
-          score, 
+        SELECT
+          score,
           ts as timestamp
         FROM cluster_score_history
         WHERE cluster_id = $1
         ORDER BY ts DESC
         LIMIT 30
       `, [clusterId]);
-      
+
       return {
         ...clusterDetails[0],
         history
       };
     },
-    
+
     // Get clusters with risk score above threshold
     highRiskClusters: async (_: any, { threshold }: { threshold: number }, { pg }: { pg: any }) => {
       const { rows } = await pg.query(`
-        SELECT 
-          c.cluster_id as "clusterId", 
-          c.risk_score as "riskScore", 
+        SELECT
+          c.cluster_id as "clusterId",
+          c.risk_score as "riskScore",
           c.tags
         FROM cluster c
         WHERE c.risk_score > $1
         ORDER BY c.risk_score DESC
       `, [threshold]);
-      
+
       return rows;
     },
-    
+
     // Get wallet by stake credential
     wallet: async (_: any, { stakeCred }: { stakeCred: string }, { pg }: { pg: any }) => {
       const { rows } = await pg.query(`
-        SELECT 
-          w.stake_cred as "stakeCred", 
+        SELECT
+          w.stake_cred as "stakeCred",
           w.flags,
           cm.cluster_id as "clusterId"
         FROM wallet w
         LEFT JOIN cluster_member cm ON cm.stake_cred = w.stake_cred
         WHERE w.stake_cred = $1
       `, [stakeCred]);
-      
+
       if (rows.length === 0) {
         return null;
       }
-      
+
       return rows[0];
     },
-    
+
     // Search wallets by flags
     searchWallets: async (_: any, { flags }: { flags: any }, { pg }: { pg: any }) => {
       // Convert flags object to JSON string for query
       const flagsJson = JSON.stringify(flags);
-      
+
       const { rows } = await pg.query(`
-        SELECT 
-          w.stake_cred as "stakeCred", 
+        SELECT
+          w.stake_cred as "stakeCred",
           w.flags,
           cm.cluster_id as "clusterId"
         FROM wallet w
         LEFT JOIN cluster_member cm ON cm.stake_cred = w.stake_cred
         WHERE w.flags @> $1::jsonb
       `, [flagsJson]);
-      
+
       return rows;
     }
   },
-  
+
   // Resolver for Wallet type to get holdings
   Wallet: {
     holdings: async (parent: any, _: any, { pg }: { pg: any }) => {
       const { rows } = await pg.query(`
-        SELECT 
+        SELECT
           th.policy_id as "policyId",
           th.balance,
           th.last_seen as "lastSeen"
         FROM token_holding th
         WHERE th.stake_cred = $1
       `, [parent.stakeCred]);
-      
+
       return rows;
     }
   },
-  
+
   // Resolver for Cluster type to get members
   Cluster: {
     members: async (parent: any, _: any, { pg }: { pg: any }) => {
       const { rows } = await pg.query(`
-        SELECT 
-          w.stake_cred as "stakeCred", 
+        SELECT
+          w.stake_cred as "stakeCred",
           w.flags,
           cm.cluster_id as "clusterId"
         FROM cluster_member cm
         JOIN wallet w ON w.stake_cred = cm.stake_cred
         WHERE cm.cluster_id = $1
       `, [parent.clusterId]);
-      
+
       return rows;
     }
   }
