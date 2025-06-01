@@ -1,0 +1,35 @@
+{
+  "name": "cardano-risk-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for Cardano token risk analysis with customizable GIFs and beautiful embeds",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "deploy": "ts-node src/deploy-commands.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "discord",
+    "cardano",
+    "crypto",
+    "risk-analysis",
+    "blockchain"
+  ],
+  "author": "Cabal Team",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^22.15.21",
+    "axios": "^1.9.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.5.0",
+    "node-fetch": "^3.3.2",
+    "sqlite3": "^5.1.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

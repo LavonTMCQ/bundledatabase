@@ -31,3 +31,11 @@ Thumbs.db
 # Build
 build/
 out/
+
+# Railway deployment files
+.railway/
+railway-*.log
+
+# Environment templates (keep template, ignore actual env files)
+.env.railway
+.env.production

@@ -1,0 +1,182 @@
+[
+  {
+    "ticker": "WMTX",
+    "unit": "e5a42a1a1d3d1da71b0449663c32798725888d2eb0843c4dabeca05a576f726c644d6f62696c65546f6b656e58",
+    "policyId": "e5a42a1a1d3d1da71b0449663c32798725888d2eb0843c4dabeca05a",
+    "assetName": "576f726c644d6f62696c65546f6b656e58",
+    "price": 0.22515194400785316,
+    "volume": 33438.9989,
+    "detectedAt": "2025-05-29T11:54:31.192Z"
+  },
+  {
+    "ticker": "LENFI",
+    "unit": "8fef2d34078659493ce161a6c7fba4b56afefa8535296a5743f6958741414441",
+    "policyId": "8fef2d34078659493ce161a6c7fba4b56afefa8535296a5743f69587",
+    "assetName": "41414441",
+    "price": 0.3800830322120461,
+    "volume": 19258.3138,
+    "detectedAt": "2025-05-29T11:54:34.235Z"
+  },
+  {
+    "ticker": "INDY",
+    "unit": "533bb94a8850ee3ccbe483106489399112b74c905342cb1792a797a0494e4459",
+    "policyId": "533bb94a8850ee3ccbe483106489399112b74c905342cb1792a797a0",
+    "assetName": "494e4459",
+    "price": 1.4111274669074372,
+    "volume": 13789.794,
+    "detectedAt": "2025-05-29T11:54:37.268Z"
+  },
+  {
+    "ticker": "O",
+    "unit": "2852268cf6e2db42e20f2fd3125f541e5d6c5a3d70b4dda17c2daa82",
+    "policyId": "2852268cf6e2db42e20f2fd3125f541e5d6c5a3d70b4dda17c2daa82",
+    "assetName": "",
+    "price": 0.2537275356370231,
+    "volume": 10792.691,
+    "detectedAt": "2025-05-29T11:54:40.294Z"
+  },
+  {
+    "ticker": "WMT",
+    "unit": "1d7f33bd23d85e1a25d87d86fac4f199c3197a2f7afeb662a0f34e1e776f726c646d6f62696c65746f6b656e",
+    "policyId": "1d7f33bd23d85e1a25d87d86fac4f199c3197a2f7afeb662a0f34e1e",
+    "assetName": "776f726c646d6f62696c65746f6b656e",
+    "price": 0.23524266581500408,
+    "volume": 10169.037,
+    "detectedAt": "2025-05-29T11:54:43.322Z"
+  },
+  {
+    "ticker": "USDA",
+    "unit": "fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae45655534441",
+    "policyId": "fe7c786ab321f41c654ef6c1af7b3250a613c24e4213e0425a7ae456",
+    "assetName": "55534441",
+    "price": 1.3055799309263885,
+    "volume": 9948.9196,
+    "detectedAt": "2025-05-29T11:54:46.392Z"
+  },
+  {
+    "ticker": "IAG",
+    "unit": "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114494147",
+    "policyId": "5d16cc1a177b5d9ba9cfa9793b07e60f1fb70fea1f8aef064415d114",
+    "assetName": "494147",
+    "price": 0.24112737576253646,
+    "volume": 9274.3967,
+    "detectedAt": "2025-05-29T11:54:49.474Z"
+  },
+  {
+    "ticker": "PRO",
+    "unit": "5d00773a22f5f0a99a2bbcd5a82436f3bb36bca72380fc14e4c373ee50524f",
+    "policyId": "5d00773a22f5f0a99a2bbcd5a82436f3bb36bca72380fc14e4c373ee",
+    "assetName": "50524f",
+    "price": 0.00003909976521667061,
+    "volume": 4640.8857,
+    "detectedAt": "2025-05-29T11:54:52.511Z"
+  },
+  {
+    "ticker": "SNEK",
+    "unit": "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f534e454b",
+    "policyId": "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f",
+    "assetName": "534e454b",
+    "price": 0.004090367655848712,
+    "volume": 4307.3632,
+    "detectedAt": "2025-05-29T11:54:55.532Z"
+  },
+  {
+    "ticker": "BTN",
+    "unit": "016be5325fd988fea98ad422fcfd53e5352cacfced5c106a932a35a442544e",
+    "policyId": "016be5325fd988fea98ad422fcfd53e5352cacfced5c106a932a35a4",
+    "assetName": "42544e",
+    "price": 0.46347794255106195,
+    "volume": 3001.4515,
+    "detectedAt": "2025-05-29T11:54:58.556Z"
+  },
+  {
+    "ticker": "iUSD",
+    "unit": "f66d78b4a3cb3d37afa0ec36461e51ecbde00f26c8f0a68f94b6988069555344",
+    "policyId": "f66d78b4a3cb3d37afa0ec36461e51ecbde00f26c8f0a68f94b69880",
+    "assetName": "69555344",
+    "price": 1.3518086419645183,
+    "volume": 2892.405,
+    "detectedAt": "2025-05-29T11:55:01.585Z"
+  },
+  {
+    "ticker": "STRIKE",
+    "unit": "f13ac4d66b3ee19a6aa0f2a22298737bd907cc95121662fc971b5275535452494b45",
+    "policyId": "f13ac4d66b3ee19a6aa0f2a22298737bd907cc95121662fc971b5275",
+    "assetName": "535452494b45",
+    "price": 0.8374176962066792,
+    "volume": 2496.643,
+    "detectedAt": "2025-05-29T11:55:04.625Z"
+  },
+  {
+    "ticker": "rsERG",
+    "unit": "04b95368393c821f180deee8229fbd941baaf9bd748ebcdbf7adbb147273455247",
+    "policyId": "04b95368393c821f180deee8229fbd941baaf9bd748ebcdbf7adbb14",
+    "assetName": "7273455247",
+    "price": 1.1796611361804006,
+    "volume": 2379.9737,
+    "detectedAt": "2025-05-29T11:55:07.697Z"
+  },
+  {
+    "ticker": "BADA",
+    "unit": "311f3f40284fed781b0d25417d3a732de04cc2e0dd38c873111dccb5426974636f696e4f6e43617264616e6f",
+    "policyId": "311f3f40284fed781b0d25417d3a732de04cc2e0dd38c873111dccb5",
+    "assetName": "426974636f696e4f6e43617264616e6f",
+    "price": 0.000003427101216032048,
+    "volume": 2163.2477,
+    "detectedAt": "2025-05-29T11:55:10.736Z"
+  },
+  {
+    "ticker": "FLDT",
+    "unit": "577f0b1342f8f8f4aed3388b80a8535812950c7a892495c0ecdf0f1e0014df10464c4454",
+    "policyId": "577f0b1342f8f8f4aed3388b80a8535812950c7a892495c0ecdf0f1e",
+    "assetName": "0014df10464c4454",
+    "price": 0.3082691513537785,
+    "volume": 1610.3076,
+    "detectedAt": "2025-05-29T11:55:13.789Z"
+  },
+  {
+    "ticker": "FET",
+    "unit": "e824c0011176f0926ad51f492bcc63ac6a03a589653520839dc7e3d9464554",
+    "policyId": "e824c0011176f0926ad51f492bcc63ac6a03a589653520839dc7e3d9",
+    "assetName": "464554",
+    "price": 1.1985790667348,
+    "volume": 1497.355,
+    "detectedAt": "2025-05-29T11:55:16.816Z"
+  },
+  {
+    "ticker": "VYFI",
+    "unit": "804f5544c1962a40546827cab750a88404dc7108c0f588b72964754f56594649",
+    "policyId": "804f5544c1962a40546827cab750a88404dc7108c0f588b72964754f",
+    "assetName": "56594649",
+    "price": 0.06990393669942434,
+    "volume": 1408.093,
+    "detectedAt": "2025-05-29T11:55:19.866Z"
+  },
+  {
+    "ticker": "DANZO",
+    "unit": "bf3e19192da77dfadc7c9065944e50ca7e1a439d90833e3ae58b720a44414e5a4f",
+    "policyId": "bf3e19192da77dfadc7c9065944e50ca7e1a439d90833e3ae58b720a",
+    "assetName": "44414e5a4f",
+    "price": 0.000009738135838758206,
+    "volume": 1296.8029,
+    "detectedAt": "2025-05-29T11:55:22.930Z"
+  },
+  {
+    "ticker": "TITAN",
+    "unit": "8483844875ce4d61c2aa459240f277d32081ee08fe0ad16899a0f5810014df10544954414e",
+    "policyId": "8483844875ce4d61c2aa459240f277d32081ee08fe0ad16899a0f581",
+    "assetName": "0014df10544954414e",
+    "price": 0.13970060635613402,
+    "volume": 1192.1818,
+    "detectedAt": "2025-05-29T11:55:25.971Z"
+  },
+  {
+    "ticker": "AGIX",
+    "unit": "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc53541474958",
+    "policyId": "f43a62fdc3965df486de8a0d32fe800963589c41b38946602a0dc535",
+    "assetName": "41474958",
+    "price": 0.5160592773540654,
+    "volume": 1125.0395,
+    "detectedAt": "2025-05-29T11:55:29.023Z"
+  }
+]

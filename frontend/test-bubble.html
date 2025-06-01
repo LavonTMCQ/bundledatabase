@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Map Test</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border: none;
+            border-radius: 20px;
+            padding: 15px 30px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 10px;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 212, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🫧 Bubble Map Test</h1>
+        <p>Test the bubble map visualization with different tokens</p>
+
+        <div class="status" id="status">Ready to test...</div>
+
+        <button class="test-button" onclick="testBubbleMap('SNEK')">🐍 Test SNEK</button>
+        <button class="test-button" onclick="testBubbleMap('HOSKY')">🐕 Test HOSKY</button>
+        <button class="test-button" onclick="testBubbleMap('MIN')">⚡ Test MIN</button>
+
+        <div id="bubble-container"></div>
+    </div>
+
+    <script>
+        async function testBubbleMap(token) {
+            const status = document.getElementById('status');
+            status.innerHTML = `🫧 Loading bubble map for ${token}...`;
+
+            try {
+                // Get policy ID from monitoring API
+                const response = await fetch(`http://localhost:3456/api/token/find?ticker=${token}`);
+                const data = await response.json();
+
+                if (!data.success || !data.token?.policyId) {
+                    status.innerHTML = `❌ Could not find policy ID for ${token}`;
+                    return;
+                }
+
+                const policyId = data.token.policyId;
+                status.innerHTML = `📡 Getting holder data for ${token} (${policyId.substring(0, 20)}...)`;
+
+                // Get enhanced holder data
+                const holderResponse = await fetch(`http://localhost:4000/analyze/${policyId}/holders`);
+                const holderData = await holderResponse.json();
+
+                if (holderData.holders && holderData.holders.length > 0) {
+                    status.innerHTML = `✅ Found ${holderData.holders.length} holders for ${token}. Creating bubble map...`;
+                    createBubbleMap(token, holderData);
+                } else {
+                    status.innerHTML = `❌ No holder data found for ${token}`;
+                }
+
+            } catch (error) {
+                status.innerHTML = `❌ Error: ${error.message}`;
+                console.error('Error:', error);
+            }
+        }
+
+        function createBubbleMap(token, holderData) {
+            // Create bubble map modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+
+            modal.innerHTML = `
+                <div style="
+                    background: #1a1a2e;
+                    border-radius: 12px;
+                    width: 90%;
+                    max-width: 900px;
+                    height: 80%;
+                    max-height: 600px;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    border: 1px solid #333;
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 15px 20px;
+                        background: #16213e;
+                        border-bottom: 1px solid #333;
+                    ">
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            color: #00ff88;
+                            font-weight: 600;
+                            font-size: 16px;
+                        ">
+                            <span>🫧</span>
+                            <span>Bubble Map - ${token}</span>
+                        </div>
+                        <button onclick="this.closest('div').parentElement.remove()" style="
+                            background: none;
+                            border: none;
+                            color: #999;
+                            font-size: 20px;
+                            cursor: pointer;
+                            padding: 5px;
+                            border-radius: 4px;
+                        ">✕</button>
+                    </div>
+
+                    <div style="
+                        flex: 1;
+                        background: #16213e;
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <svg width="100%" height="100%" viewBox="0 0 800 400" id="bubbleSvg-${token}">
+                            <!-- Bubbles will be generated here -->
+                        </svg>
+                    </div>
+
+                    <div style="
+                        padding: 10px 20px;
+                        background: #16213e;
+                        border-top: 1px solid #333;
+                        text-align: left;
+                        color: #666;
+                        font-size: 12px;
+                    ">
+                        Total Holders: ${holderData.totalHolders} | Risk Score: ${holderData.metadata?.riskScore || 'N/A'}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            generateBubbles(token, holderData);
+        }
+
+        function generateBubbles(token, holderData) {
+            const svg = document.getElementById(`bubbleSvg-${token}`);
+            const width = 800;
+            const height = 400;
+
+            const holders = holderData.holders;
+
+            // Group holders by risk category
+            const holdersByCategory = {
+                safe: holders.filter(h => h.riskCategory === 'safe'),
+                moderate_risk: holders.filter(h => h.riskCategory === 'moderate_risk'),
+                high_risk: holders.filter(h => h.riskCategory === 'high_risk')
+            };
+
+            // Position clusters
+            const clusterPositions = [
+                { x: width * 0.25, y: height * 0.5, category: 'safe', color: '#00ff88' },
+                { x: width * 0.5, y: height * 0.3, category: 'moderate_risk', color: '#ffaa00' },
+                { x: width * 0.75, y: height * 0.6, category: 'high_risk', color: '#ff4444' }
+            ];
+
+            clusterPositions.forEach((clusterPos) => {
+                const categoryHolders = holdersByCategory[clusterPos.category] || [];
+
+                // Add cluster label
+                if (categoryHolders.length > 0) {
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('x', clusterPos.x);
+                    label.setAttribute('y', clusterPos.y - 120);
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('fill', clusterPos.color);
+                    label.setAttribute('font-size', '14');
+                    label.setAttribute('font-weight', 'bold');
+                    label.textContent = `${clusterPos.category.replace('_', ' ').toUpperCase()} (${categoryHolders.length})`;
+                    svg.appendChild(label);
+                }
+
+                categoryHolders.forEach((holder, holderIndex) => {
+                    const radius = holder.bubbleSize || 20;
+
+                    // Position in circle around cluster center
+                    const angle = (holderIndex / categoryHolders.length) * 2 * Math.PI;
+                    const clusterRadius = Math.min(60 + (categoryHolders.length * 2), 100);
+
+                    const x = clusterPos.x + Math.cos(angle) * clusterRadius;
+                    const y = clusterPos.y + Math.sin(angle) * clusterRadius;
+
+                    // Create bubble
+                    const bubble = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    bubble.setAttribute('cx', Math.max(radius, Math.min(width - radius, x)));
+                    bubble.setAttribute('cy', Math.max(radius, Math.min(height - radius, y)));
+                    bubble.setAttribute('r', radius);
+                    bubble.setAttribute('fill', holder.riskColor);
+                    bubble.setAttribute('stroke', darkenColor(holder.riskColor));
+                    bubble.setAttribute('stroke-width', holder.isInfrastructure ? '3' : '2');
+                    bubble.setAttribute('opacity', holder.opacity || 0.8);
+                    bubble.style.cursor = 'pointer';
+
+                    // Add special styling for infrastructure
+                    if (holder.isInfrastructure) {
+                        bubble.setAttribute('stroke-dasharray', '5,5');
+                    }
+
+                    // Add hover tooltip
+                    bubble.addEventListener('mouseenter', (e) => {
+                        showTooltip(e, holder);
+                    });
+
+                    bubble.addEventListener('mouseleave', () => {
+                        hideTooltip();
+                    });
+
+                    svg.appendChild(bubble);
+                });
+            });
+        }
+
+        function darkenColor(color) {
+            const hex = color.replace('#', '');
+            const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 40);
+            const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 40);
+            const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 40);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        let currentTooltip = null;
+
+        function showTooltip(event, holder) {
+            const tooltip = document.createElement('div');
+            tooltip.style.cssText = `
+                position: absolute;
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                pointer-events: none;
+                z-index: 1001;
+                border: 1px solid #333;
+            `;
+
+            tooltip.innerHTML = `
+                <div><strong>Rank:</strong> #${holder.rank}</div>
+                <div><strong>Address:</strong> ${holder.address ? holder.address.substring(0, 20) + '...' : 'Unknown'}</div>
+                <div><strong>Holdings:</strong> ${holder.percentage.toFixed(2)}%</div>
+                <div><strong>Amount:</strong> ${holder.amount ? holder.amount.toLocaleString() : 'N/A'}</div>
+                <div><strong>Risk:</strong> <span style="color: ${holder.riskColor}">${holder.riskCategory.replace('_', ' ')}</span></div>
+                ${holder.isInfrastructure ? '<div><strong>Type:</strong> Infrastructure</div>' : ''}
+            `;
+
+            tooltip.style.left = event.pageX + 10 + 'px';
+            tooltip.style.top = event.pageY - 10 + 'px';
+
+            document.body.appendChild(tooltip);
+            currentTooltip = tooltip;
+        }
+
+        function hideTooltip() {
+            if (currentTooltip) {
+                currentTooltip.remove();
+                currentTooltip = null;
+            }
+        }
+    </script>
+</body>
+</html>

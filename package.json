@@ -1,0 +1,23 @@
+{
+  "name": "cabal-database",
+  "version": "1.0.0",
+  "description": "A system for tracking and analyzing Cardano wallet clusters and risk patterns using Kupo indexer.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LavonTMCQ/bundledatabase.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LavonTMCQ/bundledatabase/issues"
+  },
+  "homepage": "https://github.com/LavonTMCQ/bundledatabase#readme",
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}

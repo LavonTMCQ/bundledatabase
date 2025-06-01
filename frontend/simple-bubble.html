@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Bubble Map</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border: none;
+            border-radius: 20px;
+            padding: 15px 30px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 10px;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🫧 Simple Bubble Map Test</h1>
+        <p>Direct bubble map visualization with mock data</p>
+        
+        <button class="test-button" onclick="createMockBubbleMap()">🐍 Create SNEK Bubble Map</button>
+        <button class="test-button" onclick="createMockBubbleMap('HOSKY')">🐕 Create HOSKY Bubble Map</button>
+    </div>
+
+    <script>
+        function createMockBubbleMap(token = 'SNEK') {
+            // Mock holder data that matches our API structure
+            const mockHolderData = {
+                policyId: "279c909f348e533da5808898f87f9a14bb2c3dfbbacccd631d927a3f",
+                totalHolders: 45,
+                holders: [
+                    {
+                        id: "holder_1",
+                        address: "addr1qx2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3n0d3vllmyqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgse35a3x",
+                        stakeAddress: "stake1u9ylzsgxaa6xctf4juup682ar3juj85n8tx3hthnljg47zctvm3rc",
+                        amount: 23165917,
+                        percentage: 23.17,
+                        riskCategory: "high_risk",
+                        riskColor: "#ff4444",
+                        isInfrastructure: false,
+                        rank: 1,
+                        clusterId: "cluster_1",
+                        clusterSize: 1,
+                        bubbleSize: 45,
+                        opacity: 0.8
+                    },
+                    {
+                        id: "holder_2",
+                        address: "addr1q8la8h63yvkj0203dx58cjukmmatl5y5ucgyhygpnvs0l842ux5wuul8k8wuqzpjx8cg5v7jk9tcv233k8gsrjqvmh2sdrsw0f",
+                        stakeAddress: "stake1u8pcjqmzqh4h9qjqx8cg5v7jk9tcv233k8gsrjqvmh2sdrsw0f",
+                        amount: 15000000,
+                        percentage: 15.0,
+                        riskCategory: "moderate_risk",
+                        riskColor: "#ffaa00",
+                        isInfrastructure: false,
+                        rank: 2,
+                        clusterId: "cluster_2",
+                        clusterSize: 1,
+                        bubbleSize: 35,
+                        opacity: 0.8
+                    },
+                    {
+                        id: "holder_3",
+                        address: "addr1qyfe842ux5wuul8k8wuqzpjx8cg5v7jk9tcv233k8gsrjqvmh2sdrsw0f",
+                        stakeAddress: "stake1u8pcjqmzqh4h9qjqx8cg5v7jk9tcv233k8gsrjqvmh2sdrsw0f",
+                        amount: 12000000,
+                        percentage: 12.0,
+                        riskCategory: "moderate_risk",
+                        riskColor: "#ffaa00",
+                        isInfrastructure: false,
+                        rank: 3,
+                        clusterId: "cluster_2",
+                        clusterSize: 2,
+                        bubbleSize: 30,
+                        opacity: 0.8
+                    },
+                    {
+                        id: "holder_4",
+                        address: "addr1q9rtnhvmkdjqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgse35a3x",
+                        stakeAddress: "stake1u9rtnhvmkdjqwsx5wktcd8cc3sq835lu7drv2xwl2wywfgse35a3x",
+                        amount: 8000000,
+                        percentage: 8.0,
+                        riskCategory: "moderate_risk",
+                        riskColor: "#ffaa00",
+                        isInfrastructure: false,
+                        rank: 4,
+                        clusterId: "cluster_3",
+                        clusterSize: 1,
+                        bubbleSize: 25,
+                        opacity: 0.8
+                    },
+                    {
+                        id: "holder_5",
+                        address: "addr1q8fe842ux5wuul8k8wuqzpjx8cg5v7jk9tcv233k8gsrjqvmh2sdrsw0f",
+                        stakeAddress: "stake1u8fe842ux5wuul8k8wuqzpjx8cg5v7jk9tcv233k8gsrjqvmh2sdrsw0f",
+                        amount: 5000000,
+                        percentage: 5.0,
+                        riskCategory: "moderate_risk",
+                        riskColor: "#ffaa00",
+                        isInfrastructure: false,
+                        rank: 5,
+                        clusterId: "cluster_4",
+                        clusterSize: 1,
+                        bubbleSize: 22,
+                        opacity: 0.8
+                    },
+                    // Add some safe holders
+                    ...Array.from({length: 15}, (_, i) => ({
+                        id: `holder_${i + 6}`,
+                        address: `addr1q${Math.random().toString(36).substring(2, 15)}`,
+                        stakeAddress: `stake1u${Math.random().toString(36).substring(2, 15)}`,
+                        amount: Math.floor(Math.random() * 2000000) + 500000,
+                        percentage: Math.random() * 3 + 1,
+                        riskCategory: "safe",
+                        riskColor: "#00ff88",
+                        isInfrastructure: false,
+                        rank: i + 6,
+                        clusterId: `cluster_${i + 5}`,
+                        clusterSize: 1,
+                        bubbleSize: Math.floor(Math.random() * 10) + 15,
+                        opacity: 0.8
+                    }))
+                ],
+                clusters: [
+                    { category: "safe", count: 15, totalPercentage: 25.5, color: "#00ff88" },
+                    { category: "moderate_risk", count: 4, totalPercentage: 40.0, color: "#ffaa00" },
+                    { category: "high_risk", count: 1, totalPercentage: 23.17, color: "#ff4444" }
+                ],
+                metadata: {
+                    riskScore: 6,
+                    topHolderPercentage: 23.17,
+                    maxPercentage: 23.17,
+                    minPercentage: 1.0
+                }
+            };
+
+            // Create bubble map modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="
+                    background: #1a1a2e;
+                    border-radius: 12px;
+                    width: 90%;
+                    max-width: 900px;
+                    height: 80%;
+                    max-height: 600px;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    border: 1px solid #333;
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 15px 20px;
+                        background: #16213e;
+                        border-bottom: 1px solid #333;
+                    ">
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            color: #00ff88;
+                            font-weight: 600;
+                            font-size: 16px;
+                        ">
+                            <span>🫧</span>
+                            <span>Bubble Map - ${token}</span>
+                            <span style="color: #666; font-size: 14px;">✏️</span>
+                        </div>
+                        <button onclick="this.closest('div').parentElement.remove()" style="
+                            background: none;
+                            border: none;
+                            color: #999;
+                            font-size: 20px;
+                            cursor: pointer;
+                            padding: 5px;
+                            border-radius: 4px;
+                        ">✕</button>
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 10px 20px;
+                        background: #1a1a2e;
+                        border-bottom: 1px solid #333;
+                    ">
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            background: #2a2a4e;
+                            padding: 8px 12px;
+                            border-radius: 8px;
+                            color: white;
+                            font-size: 14px;
+                        ">
+                            <span>📅</span>
+                            <span>1m ago</span>
+                            <span>▼</span>
+                        </div>
+                        <div style="
+                            background: #2a2a4e;
+                            padding: 8px 12px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                        ">
+                            <span>🔗</span>
+                        </div>
+                    </div>
+                    
+                    <div style="
+                        flex: 1;
+                        background: #16213e;
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <svg width="100%" height="100%" viewBox="0 0 800 400" id="bubbleSvg-${token}">
+                            <!-- Bubbles will be generated here -->
+                        </svg>
+                    </div>
+                    
+                    <div style="
+                        padding: 10px 20px;
+                        background: #16213e;
+                        border-top: 1px solid #333;
+                        text-align: left;
+                        color: #666;
+                        font-size: 12px;
+                        font-weight: 600;
+                        letter-spacing: 1px;
+                    ">
+                        Total Holders: ${mockHolderData.totalHolders} | Risk Score: ${mockHolderData.metadata.riskScore} | Top Holder: ${mockHolderData.metadata.topHolderPercentage}%
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Generate bubbles
+            generateBubbles(token, mockHolderData);
+        }
+
+        function generateBubbles(token, holderData) {
+            const svg = document.getElementById(`bubbleSvg-${token}`);
+            const width = 800;
+            const height = 400;
+            
+            const holders = holderData.holders;
+            
+            // Group holders by risk category
+            const holdersByCategory = {
+                safe: holders.filter(h => h.riskCategory === 'safe'),
+                moderate_risk: holders.filter(h => h.riskCategory === 'moderate_risk'),
+                high_risk: holders.filter(h => h.riskCategory === 'high_risk')
+            };
+            
+            // Position clusters across the canvas
+            const clusterPositions = [
+                { x: width * 0.25, y: height * 0.5, category: 'safe', color: '#00ff88' },
+                { x: width * 0.5, y: height * 0.3, category: 'moderate_risk', color: '#ffaa00' },
+                { x: width * 0.75, y: height * 0.6, category: 'high_risk', color: '#ff4444' }
+            ];
+            
+            clusterPositions.forEach((clusterPos) => {
+                const categoryHolders = holdersByCategory[clusterPos.category] || [];
+                
+                // Add cluster labels
+                if (categoryHolders.length > 0) {
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('x', clusterPos.x);
+                    label.setAttribute('y', clusterPos.y - 120);
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('fill', clusterPos.color);
+                    label.setAttribute('font-size', '14');
+                    label.setAttribute('font-weight', 'bold');
+                    label.textContent = `${clusterPos.category.replace('_', ' ').toUpperCase()} (${categoryHolders.length})`;
+                    svg.appendChild(label);
+                }
+                
+                categoryHolders.forEach((holder, holderIndex) => {
+                    const radius = holder.bubbleSize || 20;
+                    
+                    // Position bubbles in a circular pattern around cluster center
+                    const angle = (holderIndex / categoryHolders.length) * 2 * Math.PI;
+                    const clusterRadius = Math.min(80 + (categoryHolders.length * 3), 120);
+                    
+                    const x = clusterPos.x + Math.cos(angle) * clusterRadius;
+                    const y = clusterPos.y + Math.sin(angle) * clusterRadius;
+                    
+                    // Create bubble
+                    const bubble = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    bubble.setAttribute('cx', Math.max(radius, Math.min(width - radius, x)));
+                    bubble.setAttribute('cy', Math.max(radius, Math.min(height - radius, y)));
+                    bubble.setAttribute('r', radius);
+                    bubble.setAttribute('fill', holder.riskColor);
+                    bubble.setAttribute('stroke', darkenColor(holder.riskColor));
+                    bubble.setAttribute('stroke-width', holder.isInfrastructure ? '3' : '2');
+                    bubble.setAttribute('opacity', holder.opacity || 0.8);
+                    bubble.style.cursor = 'pointer';
+                    bubble.style.transition = 'all 0.3s ease';
+                    
+                    // Add special styling for infrastructure
+                    if (holder.isInfrastructure) {
+                        bubble.setAttribute('stroke-dasharray', '5,5');
+                    }
+                    
+                    // Add hover effects
+                    bubble.addEventListener('mouseenter', (e) => {
+                        bubble.style.filter = 'brightness(1.2)';
+                        bubble.setAttribute('stroke-width', '3');
+                        showTooltip(e, holder);
+                    });
+                    
+                    bubble.addEventListener('mouseleave', () => {
+                        bubble.style.filter = 'brightness(1)';
+                        bubble.setAttribute('stroke-width', holder.isInfrastructure ? '3' : '2');
+                        hideTooltip();
+                    });
+                    
+                    svg.appendChild(bubble);
+                });
+            });
+            
+            // Add animation
+            setTimeout(() => {
+                const bubbles = svg.querySelectorAll('circle');
+                bubbles.forEach((bubble, index) => {
+                    setTimeout(() => {
+                        bubble.style.opacity = bubble.getAttribute('opacity');
+                        bubble.style.transform = 'scale(1)';
+                    }, index * 30);
+                });
+            }, 100);
+        }
+        
+        function darkenColor(color) {
+            const hex = color.replace('#', '');
+            const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 40);
+            const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 40);
+            const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 40);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+        
+        let currentTooltip = null;
+        
+        function showTooltip(event, holder) {
+            const tooltip = document.createElement('div');
+            tooltip.style.cssText = `
+                position: absolute;
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                pointer-events: none;
+                z-index: 1001;
+                border: 1px solid #333;
+            `;
+            
+            tooltip.innerHTML = `
+                <div><strong>Rank:</strong> #${holder.rank}</div>
+                <div><strong>Address:</strong> ${holder.address.substring(0, 20)}...</div>
+                <div><strong>Holdings:</strong> ${holder.percentage.toFixed(2)}%</div>
+                <div><strong>Amount:</strong> ${holder.amount.toLocaleString()}</div>
+                <div><strong>Risk:</strong> <span style="color: ${holder.riskColor}">${holder.riskCategory.replace('_', ' ')}</span></div>
+                ${holder.isInfrastructure ? '<div><strong>Type:</strong> Infrastructure</div>' : ''}
+            `;
+            
+            tooltip.style.left = event.pageX + 10 + 'px';
+            tooltip.style.top = event.pageY - 10 + 'px';
+            
+            document.body.appendChild(tooltip);
+            currentTooltip = tooltip;
+        }
+        
+        function hideTooltip() {
+            if (currentTooltip) {
+                currentTooltip.remove();
+                currentTooltip = null;
+            }
+        }
+    </script>
+</body>
+</html>

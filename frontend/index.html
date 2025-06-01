@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MISTER - Cardano Token Intelligence</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>MISTER</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Navigation Sections -->
+                <div class="nav-section">
+                    <div class="nav-item active" data-section="analysis">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Token Analysis</span>
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" data-action="analyze">Risk Analysis</div>
+                        <div class="nav-subitem" data-action="compare">Compare Tokens</div>
+                        <div class="nav-subitem" data-action="batch">Batch Analysis</div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-item" data-section="visualization">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>Visualizations</span>
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" data-action="holders">Holder Distribution</div>
+                        <div class="nav-subitem" data-action="clusters">Wallet Clusters</div>
+                        <div class="nav-subitem" data-action="network">Token Network</div>
+                        <div class="nav-subitem" data-action="heatmap">Risk Heatmap</div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-item" data-section="monitoring">
+                        <i class="fas fa-radar"></i>
+                        <span>Live Monitoring</span>
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" data-action="trending">Trending Tokens</div>
+                        <div class="nav-subitem" data-action="alerts">Risk Alerts</div>
+                        <div class="nav-subitem" data-action="watchlist">My Watchlist</div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-item" data-section="intelligence">
+                        <i class="fas fa-brain"></i>
+                        <span>Market Intelligence</span>
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" data-action="safe-tokens">Safe Tokens</div>
+                        <div class="nav-subitem" data-action="risky-tokens">Risky Tokens</div>
+                        <div class="nav-subitem" data-action="new-tokens">New Discoveries</div>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-item" data-section="portfolio">
+                        <i class="fas fa-wallet"></i>
+                        <span>Portfolio Analysis</span>
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="nav-submenu">
+                        <div class="nav-subitem" data-action="portfolio-risk">Portfolio Risk</div>
+                        <div class="nav-subitem" data-action="diversification">Diversification</div>
+                        <div class="nav-subitem" data-action="recommendations">Recommendations</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <div class="status-dot online"></div>
+                    <span>All Systems Online</span>
+                </div>
+                <div class="api-status">
+                    <div class="api-item">
+                        <span>Risk API</span>
+                        <div class="status-dot online"></div>
+                    </div>
+                    <div class="api-item">
+                        <span>Token DB</span>
+                        <div class="status-dot online"></div>
+                    </div>
+                    <div class="api-item">
+                        <span>Monitor</span>
+                        <div class="status-dot online"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <h1>Cardano Token Intelligence</h1>
+                    <p>Advanced risk analysis and cluster detection</p>
+                </div>
+                <div class="header-right">
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="tokenSearch" placeholder="Search tokens, policy IDs, or tickers...">
+                    </div>
+                    <div class="user-menu">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area" id="contentArea">
+                <!-- Chat Interface -->
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <h3>MISTER Intelligence Assistant</h3>
+                        <div class="chat-status">
+                            <div class="status-dot online"></div>
+                            <span>Ready for analysis</span>
+                        </div>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-avatar">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="sender">MISTER Assistant</span>
+                                    <span class="timestamp">Just now</span>
+                                </div>
+                                <div class="message-text">
+                                    Welcome to MISTER - The Gold Standard for Cardano Safety! 🎯
+                                    <br><br>
+                                    I can help you analyze tokens, detect clusters, and identify risks. Try:
+                                    <ul>
+                                        <li>"Analyze SNEK token"</li>
+                                        <li>"Show HOSKY holder clusters"</li>
+                                        <li>"Compare MISTER vs other tokens"</li>
+                                        <li>"What are the riskiest tokens today?"</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="chat-input">
+                            <input type="text" id="chatInput" placeholder="Ask about any Cardano token...">
+                            <button id="sendButton">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="quick-actions">
+                            <button class="quick-action" data-query="Analyze SNEK">
+                                <i class="fas fa-chart-line"></i>
+                                Analyze SNEK
+                            </button>
+                            <button class="quick-action" data-query="Show trending tokens">
+                                <i class="fas fa-fire"></i>
+                                Trending
+                            </button>
+                            <button class="quick-action" data-query="Risk alerts">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Alerts
+                            </button>
+                            <button class="quick-action" data-query="Cluster analysis">
+                                <i class="fas fa-project-diagram"></i>
+                                Clusters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Modal -->
+    <div class="modal" id="analysisModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Token Analysis Results</h3>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Analysis results will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualization Canvas -->
+    <div class="visualization-container" id="visualizationContainer">
+        <canvas id="networkCanvas"></canvas>
+        <div class="visualization-controls">
+            <button class="viz-control" data-type="holders">
+                <i class="fas fa-chart-pie"></i>
+                Holders
+            </button>
+            <button class="viz-control" data-type="clusters">
+                <i class="fas fa-project-diagram"></i>
+                Clusters
+            </button>
+            <button class="viz-control" data-type="network">
+                <i class="fas fa-share-alt"></i>
+                Network
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.6.1/d3.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

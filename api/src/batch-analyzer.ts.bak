@@ -1,0 +1,220 @@
+import { Pool } from 'pg';
+import { BlockfrostService } from './blockfrost-service';
+import { DatabaseService } from './database-service';
+
+interface TokenFromRailway {
+  policy_id: string;
+  asset_name: string;
+  ticker: string;
+  name: string;
+  volume_24h: number;
+}
+
+class BatchTokenAnalyzer {
+  private localPool: Pool;
+  private railwayPool: Pool;
+  private blockfrost: BlockfrostService;
+  private dbService: DatabaseService;
+
+  constructor() {
+    // Local database for storing analysis results
+    this.localPool = new Pool({
+      host: 'localhost',
+      port: 5432,
+      database: 'cabal_db',
+      user: 'coldgame',
+    });
+
+    // Railway database for reading tokens
+    this.railwayPool = new Pool({
+      host: 'trolley.proxy.rlwy.net',
+      port: 30487,
+      database: 'railway',
+      user: 'postgres',
+      password: 'jnZORZUDtetoUczuKrlvKVNYzrIfLFpc',
+    });
+
+    this.blockfrost = new BlockfrostService();
+    this.dbService = new DatabaseService(this.localPool);
+  }
+
+  async getTokensFromRailway(limit: number = 100, offset: number = 0): Promise<TokenFromRailway[]> {
+    const result = await this.railwayPool.query(`
+      SELECT policy_id, asset_name, ticker, name, volume_24h
+      FROM tokens
+      ORDER BY volume_24h DESC NULLS LAST
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    return result.rows;
+  }
+
+  async analyzeAndStoreToken(token: TokenFromRailway): Promise<boolean> {
+    try {
+      console.log(`Analyzing ${token.name || token.ticker} (${token.policy_id})`);
+
+      // Check if already analyzed recently (within 24 hours)
+      const existing = await this.localPool.query(`
+        SELECT updated_at FROM token_analysis
+        WHERE policy_id = $1 AND asset_name = $2
+        AND updated_at > NOW() - INTERVAL '24 hours'
+      `, [token.policy_id, token.asset_name || '']);
+
+      if (existing.rows.length > 0) {
+        console.log(`  ⏭️  Skipping - analyzed recently`);
+        return true;
+      }
+
+      // Perform analysis
+      const analysis = await this.blockfrost.analyzeToken(token.policy_id, token.asset_name || '');
+
+      if ('error' in analysis) {
+        console.log(`  ❌ Error: ${analysis.error}`);
+        return false;
+      }
+
+      // Determine risk level
+      const getRiskLevel = (riskScore: number, topHolderPercentage: number): string => {
+        if (riskScore === 0 && topHolderPercentage < 5) return 'extremely safe';
+        if (riskScore < 3 && topHolderPercentage < 9) return 'safe';
+        if (riskScore < 6 || topHolderPercentage < 15) return 'moderate risk';
+        if (riskScore < 8 || topHolderPercentage < 25) return 'high risk';
+        return 'extreme risk';
+      };
+
+      const riskLevel = getRiskLevel(analysis.riskScore, analysis.topHolderPercentage);
+      const tokenName = token.name || token.ticker || 'Unknown Token';
+
+      // Save to database
+      await this.dbService.saveTokenAnalysis({
+        policyId: token.policy_id,
+        assetName: token.asset_name || '',
+        tokenName,
+        riskScore: analysis.riskScore,
+        riskLevel,
+        topHolderPercentage: analysis.topHolderPercentage,
+        stakeClusters: analysis.stakeClusters,
+        coordinatedBlocks: analysis.coordinatedBlocks,
+        totalHolders: analysis.totalHolders,
+        regularHolders: analysis.regularHolders,
+        liquidityPools: analysis.liquidityPools,
+        infrastructureHolders: analysis.infrastructureHolders,
+        assumedTotalSupply: analysis.assumedTotalSupply,
+        observedSupply: analysis.observedSupply,
+        circulatingSupply: analysis.circulatingSupply,
+        liquiditySupply: analysis.liquiditySupply,
+        infrastructureSupply: analysis.infrastructureSupply,
+        patterns: analysis.patterns,
+        holders: analysis.holders
+      });
+
+      console.log(`  ✅ ${tokenName}: Risk ${analysis.riskScore}/10 (${riskLevel}) - Top holder ${analysis.topHolderPercentage}%`);
+      return true;
+
+    } catch (error) {
+      console.log(`  ❌ Failed: ${error}`);
+      return false;
+    }
+  }
+
+  async batchAnalyze(batchSize: number = 10, maxTokens: number = 100, startOffset: number = 0): Promise<void> {
+    console.log(`🚀 Starting batch analysis of ${maxTokens} tokens (batch size: ${batchSize})`);
+
+    let processed = 0;
+    let successful = 0;
+    let errors = 0;
+    let offset = startOffset;
+
+    while (processed < maxTokens) {
+      const remainingTokens = Math.min(batchSize, maxTokens - processed);
+      const tokens = await this.getTokensFromRailway(remainingTokens, offset);
+
+      if (tokens.length === 0) {
+        console.log('No more tokens to process');
+        break;
+      }
+
+      console.log(`\n📦 Processing batch ${Math.floor(offset / batchSize) + 1} (${tokens.length} tokens)`);
+
+      for (const token of tokens) {
+        const success = await this.analyzeAndStoreToken(token);
+
+        if (success) {
+          successful++;
+        } else {
+          errors++;
+        }
+
+        processed++;
+
+        // Rate limiting - wait 2 seconds between requests
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+      offset += batchSize;
+
+      // Progress update
+      console.log(`\n📊 Progress: ${processed}/${maxTokens} tokens processed (${successful} successful, ${errors} errors)`);
+
+      // Longer pause between batches
+      if (processed < maxTokens) {
+        console.log('⏸️  Pausing 10 seconds between batches...\n');
+        await new Promise(resolve => setTimeout(resolve, 10000));
+      }
+    }
+
+    console.log(`\n🎉 Batch analysis complete!`);
+    console.log(`📈 Results: ${successful} successful, ${errors} errors out of ${processed} total`);
+
+    // Show summary stats
+    await this.showSummaryStats();
+  }
+
+  async showSummaryStats(): Promise<void> {
+    try {
+      const stats = await this.dbService.getAnalysisStats();
+      console.log('\n📊 Analysis Summary:');
+      console.log(`Total tokens analyzed: ${stats.total_tokens}`);
+
+      stats.by_risk_level.forEach((level: any) => {
+        const emoji = level.risk_level === 'extremely safe' ? '🟢' :
+                     level.risk_level === 'safe' ? '✅' :
+                     level.risk_level === 'moderate risk' ? '⚠️' :
+                     level.risk_level === 'high risk' ? '🚨' : '🔴';
+
+        console.log(`${emoji} ${level.risk_level}: ${level.count} tokens (avg risk: ${parseFloat(level.avg_risk_score).toFixed(1)})`);
+      });
+    } catch (error) {
+      console.log('Could not retrieve summary stats:', error);
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.localPool.end();
+    await this.railwayPool.end();
+  }
+}
+
+// CLI interface
+async function main() {
+  const analyzer = new BatchTokenAnalyzer();
+
+  try {
+    const args = process.argv.slice(2);
+    const batchSize = parseInt(args[0]) || 10;
+    const maxTokens = parseInt(args[1]) || 50;
+    const startOffset = parseInt(args[2]) || 0;
+
+    await analyzer.batchAnalyze(batchSize, maxTokens, startOffset);
+  } catch (error) {
+    console.error('Batch analysis failed:', error);
+  } finally {
+    await analyzer.close();
+  }
+}
+
+if (require.main === module) {
+  main();
+}
+
+export { BatchTokenAnalyzer };

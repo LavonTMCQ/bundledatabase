@@ -1,0 +1,128 @@
+{
+  "stake178j4fcxw7pwgxw92yu28c2zqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzq": {
+    "address": "stake178j4fcxw7pwgxw92yu28c2zqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzqzq",
+    "type": "stake",
+    "label": "OptimTreasury",
+    "notes": "55% O token holder",
+    "handle": null,
+    "connectedWallets": 0,
+    "connectedAddresses": [],
+    "portfolio": null,
+    "addedAt": "2025-05-29T18:29:59.087Z",
+    "lastChecked": "2025-05-29T18:29:59.088Z",
+    "alerts": []
+  },
+  "stake1uy7nxa89esk3zgtadcthl9az": {
+    "address": "stake1uy7nxa89esk3zgtadcthl9az",
+    "type": "stake",
+    "label": "ODAO Entity",
+    "notes": "29.83% O token holder with handle @odao.pol_1",
+    "handle": null,
+    "connectedWallets": 0,
+    "connectedAddresses": [],
+    "portfolio": null,
+    "addedAt": "2025-05-29T18:30:08.871Z",
+    "lastChecked": "2025-05-29T18:30:08.873Z",
+    "alerts": []
+  },
+  "addr1q82j3cnhky8u0w4wa0ntsgeypraf24jxz5qr6wgwcy97u7t8pvpwk4ker5z2lmfsjlvx0y2tex68ahdwql9xkm9urxks9n2nl8": {
+    "address": "addr1q82j3cnhky8u0w4wa0ntsgeypraf24jxz5qr6wgwcy97u7t8pvpwk4ker5z2lmfsjlvx0y2tex68ahdwql9xkm9urxks9n2nl8",
+    "type": "wallet",
+    "label": "MisterExc6",
+    "notes": "Test wallet with ADA handle",
+    "handle": "$@misterexc6",
+    "connectedWallets": 0,
+    "connectedAddresses": [],
+    "portfolio": {
+      "adaBalance": 19.334836,
+      "adaValue": 4553.651783076192,
+      "liquidValue": 4548.651783076192,
+      "numFTs": 3,
+      "numNFTs": 1,
+      "positionsFt": [
+        {
+          "24h": -0.06045514256813474,
+          "30d": 0.19980811689459194,
+          "7d": -0.13855802693545266,
+          "adaValue": 4523.480262194448,
+          "balance": 25109822,
+          "fingerprint": "asset1lm9mamfll8uk46v5m87q59n2rfpmj8k8lhq6u8",
+          "liquidBalance": 25109822,
+          "liquidValue": 4523.480262194448,
+          "price": 0.000180147842632833,
+          "ticker": "MISTER",
+          "unit": "7529bed52d81a20e69c6dd447dd9cc0293daf4577f08d7ed2d8ab0814d4953544552"
+        },
+        {
+          "24h": 0,
+          "30d": 0,
+          "7d": 0,
+          "adaValue": 19.334836,
+          "balance": 19.334836,
+          "fingerprint": "",
+          "liquidBalance": 19.334836,
+          "liquidValue": 19.334836,
+          "ticker": "ADA",
+          "unit": ""
+        },
+        {
+          "24h": -0.006635908245086868,
+          "30d": 0.04208020736329977,
+          "7d": -0.060817823393437255,
+          "adaValue": 5.836684881744383,
+          "balance": 9968,
+          "fingerprint": "asset1rywvnl3tgkn6jzn3rcgtsk5a3vxzn0yzvjgqn5",
+          "liquidBalance": 9968,
+          "liquidValue": 5.836684881744383,
+          "price": 0.000585542223288963,
+          "ticker": "TOOL",
+          "unit": "ac015c38917f306a84748c2d646bed90bdd64421c592163e60702d735453555255"
+        }
+      ],
+      "positionsLp": [],
+      "positionsNft": [
+        {
+          "24h": 0,
+          "30d": 0,
+          "7d": 0,
+          "adaValue": 5,
+          "balance": 1,
+          "floorPrice": 5,
+          "liquidValue": 0,
+          "listings": 0,
+          "name": "ADA Handle",
+          "policy": "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a"
+        }
+      ]
+    },
+    "addedAt": "2025-05-29T18:32:15.273Z",
+    "lastChecked": "2025-05-29T18:32:15.274Z",
+    "alerts": []
+  },
+  "stake1u8rphunzxm9lr4m688peqmnthmap35yt38rgvaqgsk5jcrqdr2vuc": {
+    "address": "stake1u8rphunzxm9lr4m688peqmnthmap35yt38rgvaqgsk5jcrqdr2vuc",
+    "type": "stake",
+    "label": "Active Trader",
+    "notes": "Example stake with trading history",
+    "handle": null,
+    "connectedWallets": 1,
+    "connectedAddresses": [
+      {
+        "address": "addr1q9j5jqhqak5nmqphdqt4cj9kq0gppa49afyznggw03hjzhwxr0exydkt78th5wwrjphxh0h6rrgghzwxse6q3pdf9sxqkg2mmq"
+      }
+    ],
+    "portfolio": {
+      "adaBalance": 0,
+      "adaValue": 0,
+      "liquidValue": 0,
+      "numFTs": 0,
+      "numNFTs": 0,
+      "positionsFt": [],
+      "positionsLp": [],
+      "positionsNft": []
+    },
+    "addedAt": "2025-05-29T18:41:10.880Z",
+    "lastChecked": "2025-05-29T18:41:10.881Z",
+    "alerts": []
+  }
+}
