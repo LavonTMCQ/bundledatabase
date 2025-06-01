@@ -4,6 +4,7 @@
   "description": "A system for tracking and analyzing Cardano wallet clusters and risk patterns using Kupo indexer.",
   "main": "index.js",
   "scripts": {
+    "start": "echo \"Please deploy individual services from their directories: /api, /monitoring, /discord-bot\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
