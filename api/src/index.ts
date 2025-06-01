@@ -9,7 +9,8 @@ import { TokenStorageService } from './token-storage-service';
 
 // Initialize PostgreSQL connection pool with optimized settings
 const pool = new Pool({
-  connectionString: 'postgresql://coldgame@localhost:5432/mister_db',
+  connectionString: process.env.DATABASE_URL || 'postgresql://coldgame@localhost:5432/mister_db',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
@@ -66,9 +67,24 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-// Health check endpoint
-fastify.get('/health', async () => {
-  return { status: 'ready' };
+// Health check endpoint with database connection test
+fastify.get('/health', async (request, reply) => {
+  try {
+    // Test database connection
+    const dbResult = await pool.query('SELECT NOW() as timestamp');
+    return {
+      status: 'ready',
+      database: 'connected',
+      timestamp: dbResult.rows[0].timestamp
+    };
+  } catch (error) {
+    fastify.log.error('Database connection failed:', error);
+    return reply.status(503).send({
+      status: 'degraded',
+      database: 'disconnected',
+      error: 'Database connection failed'
+    });
+  }
 });
 
 // OPTIMIZED: Real-time token risk analysis with caching
