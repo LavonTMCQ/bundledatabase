@@ -7,14 +7,45 @@ import { DatabaseService } from './database-service';
 import { BubbleMapService } from './bubble-map-service';
 import { TokenStorageService } from './token-storage-service';
 
-// Initialize PostgreSQL connection pool with optimized settings
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://coldgame@localhost:5432/mister_db',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+// Initialize PostgreSQL connection pool with optimized Railway settings
+const getDatabaseConfig = () => {
+  const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://coldgame@localhost:5432/mister_db';
+
+  // Railway-specific optimizations
+  const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production';
+
+  return {
+    connectionString: databaseUrl,
+    ssl: isRailway ? { rejectUnauthorized: false } : false,
+    max: 20, // Maximum number of clients in the pool
+    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+    connectionTimeoutMillis: 5000, // Increased timeout for Railway
+    acquireTimeoutMillis: 10000, // Time to wait for connection from pool
+    statement_timeout: 30000, // 30 second query timeout
+    query_timeout: 30000,
+    application_name: 'mister_risk_api'
+  };
+};
+
+const pool = new Pool(getDatabaseConfig());
+
+// Database connection event handlers
+pool.on('connect', (client) => {
+  console.log('🔗 New database client connected');
 });
+
+pool.on('error', (err, client) => {
+  console.error('💥 Database pool error:', err);
+});
+
+// Test database connection on startup
+pool.query('SELECT NOW() as timestamp')
+  .then((result) => {
+    console.log('✅ Database connected successfully at:', result.rows[0].timestamp);
+  })
+  .catch((error) => {
+    console.error('❌ Database connection failed:', error);
+  });
 
 // Create Fastify instance with optimized settings
 const fastify = Fastify({
