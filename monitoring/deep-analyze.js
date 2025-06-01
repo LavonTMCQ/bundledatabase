@@ -174,7 +174,7 @@ class DeepAnalyzeCommand {
         intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
       });
 
-      await client.login(process.env.DISCORD_BOT_TOKEN);
+      await client.login(process.env.DISCORD_BOT_TOKEN || 'MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA');
 
       const channel = await client.channels.fetch(channelId);
       if (!channel) {

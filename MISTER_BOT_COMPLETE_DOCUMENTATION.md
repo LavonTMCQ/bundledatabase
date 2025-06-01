@@ -19,12 +19,12 @@ The MISTER Risk Analysis Bot is a comprehensive Cardano token risk analysis syst
 
 3. **Discord Bot** - MR. RISK#1169
    ```bash
-   cd discord-bot && DISCORD_BOT_TOKEN=your_discord_bot_token_here node bot-simple.js
+   cd discord-bot && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node bot-simple.js
    ```
 
 4. **Auto-Monitor** - Every 2 hours
    ```bash
-   cd monitoring && DISCORD_BOT_TOKEN=your_discord_bot_token_here node auto-monitor.js start
+   cd monitoring && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node auto-monitor.js start
    ```
 
 ## 🤖 DISCORD BOT CAPABILITIES
@@ -73,7 +73,7 @@ The MISTER Risk Analysis Bot is a comprehensive Cardano token risk analysis syst
 
 ### **ENVIRONMENT VARIABLES:**
 ```
-DISCORD_BOT_TOKEN=your_discord_bot_token_here
+DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA
 CLIENT_ID=1376772499030675547
 RISK_API_URL=http://localhost:4000
 TOKEN_API_URL=http://localhost:3456
