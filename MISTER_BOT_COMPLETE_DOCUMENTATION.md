@@ -12,26 +12,26 @@ The MISTER Risk Analysis Bot is a comprehensive Cardano token risk analysis syst
    cd risk-analysis && node server.js
    ```
 
-2. **Token Database API** - Port 3456  
+2. **Token Database API** - Port 3456
    ```bash
    cd token-api && node server.js
    ```
 
 3. **Discord Bot** - MR. RISK#1169
    ```bash
-   cd discord-bot && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node bot-simple.js
+   cd discord-bot && DISCORD_BOT_TOKEN=your_discord_bot_token_here node bot-simple.js
    ```
 
 4. **Auto-Monitor** - Every 2 hours
    ```bash
-   cd monitoring && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node auto-monitor.js
+   cd monitoring && DISCORD_BOT_TOKEN=your_discord_bot_token_here node auto-monitor.js start
    ```
 
 ## 🤖 DISCORD BOT CAPABILITIES
 
 ### **📊 CORE ANALYSIS COMMANDS:**
 - `/analyze ticker:SNEK` - Basic risk analysis with beautiful formatting
-- `/deep ticker:SNEK` - Super deep analysis with clustering and ADA handles  
+- `/deep ticker:SNEK` - Super deep analysis with clustering and ADA handles
 - `/visualize ticker:SNEK` - Beautiful bubble map visualization
 - `/price ticker:SNEK` - Current price and market data
 
@@ -43,7 +43,7 @@ The MISTER Risk Analysis Bot is a comprehensive Cardano token risk analysis syst
 
 ### **📈 MARKET & SYSTEM COMMANDS:**
 - `/market safe` - Show safest tokens
-- `/market risky` - Show riskiest tokens  
+- `/market risky` - Show riskiest tokens
 - `/market stats` - Market statistics
 - `/health` - System health check
 - `/status` - Bot status and statistics
@@ -73,7 +73,7 @@ The MISTER Risk Analysis Bot is a comprehensive Cardano token risk analysis syst
 
 ### **ENVIRONMENT VARIABLES:**
 ```
-DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA
+DISCORD_BOT_TOKEN=your_discord_bot_token_here
 CLIENT_ID=1376772499030675547
 RISK_API_URL=http://localhost:4000
 TOKEN_API_URL=http://localhost:3456
@@ -119,7 +119,7 @@ OPENROUTER_API_KEY=sk-or-v1-9d23b36daafd1147aaaa1956b90ff84befc0c74844d90de82985
 
 ### **EMBED COLORS:**
 - **Success:** Green (#00ff00)
-- **Error:** Red (#ff0000)  
+- **Error:** Red (#ff0000)
 - **Info:** Blue (#0099ff)
 - **MISTER:** Purple (#9932cc)
 

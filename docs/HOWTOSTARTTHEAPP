@@ -5,7 +5,7 @@ cd risk-analysis && node server.js
 cd token-api && node server.js
 
 # 3. Discord Bot
-cd discord-bot && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node bot-simple.js
+cd discord-bot && DISCORD_BOT_TOKEN=your_discord_bot_token_here node bot-simple.js
 
 # 4. Auto-Monitor
-cd monitoring && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node auto-monitor.js
+cd monitoring && DISCORD_BOT_TOKEN=your_discord_bot_token_here node auto-monitor.js start

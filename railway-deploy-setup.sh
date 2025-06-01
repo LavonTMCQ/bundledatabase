@@ -61,7 +61,7 @@ cat > api/railway.json << 'EOF'
 }
 EOF
 
-# Token API railway.json  
+# Token API railway.json
 mkdir -p monitoring/.railway
 cat > monitoring/railway.json << 'EOF'
 {
@@ -179,7 +179,7 @@ PORT=4000
 NODE_ENV=production
 
 # ===========================================
-# TOKEN API SERVICE (Port 3456)  
+# TOKEN API SERVICE (Port 3456)
 # ===========================================
 DATABASE_URL=postgresql://username:password@host:port/database_name
 TAPTOOLS_API_KEY=WghkJaZlDWYdQFsyt3uiLdTIOYnR5uhO
@@ -189,7 +189,7 @@ NODE_ENV=production
 # ===========================================
 # AUTO-MONITOR SERVICE (Port 4001)
 # ===========================================
-DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA
+DISCORD_BOT_TOKEN=your_discord_bot_token_here
 RISK_API_URL=https://your-risk-api.railway.app
 TOKEN_API_URL=https://your-token-api.railway.app
 TAPTOOLS_API_KEY=WghkJaZlDWYdQFsyt3uiLdTIOYnR5uhO
@@ -200,7 +200,7 @@ NODE_ENV=production
 # ===========================================
 # DISCORD BOT SERVICE
 # ===========================================
-DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA
+DISCORD_BOT_TOKEN=your_discord_bot_token_here
 RISK_API_URL=https://your-risk-api.railway.app
 TOKEN_API_URL=https://your-token-api.railway.app
 NODE_ENV=production
@@ -318,7 +318,7 @@ echo "====================================="
 echo ""
 print_info "Files created:"
 echo "  📁 api/railway.json - Risk API configuration"
-echo "  📁 monitoring/railway.json - Token API configuration"  
+echo "  📁 monitoring/railway.json - Token API configuration"
 echo "  📁 monitoring/railway-monitor.json - Monitor configuration"
 echo "  📁 discord-bot/railway.json - Discord bot configuration"
 echo "  📄 .env.railway.template - Environment variables template"
