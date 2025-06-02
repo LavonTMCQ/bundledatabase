@@ -136,6 +136,80 @@ fastify.get('/health', async (request, reply) => {
   }
 });
 
+// Database setup endpoint for Railway
+fastify.post('/setup-database', async (request, reply) => {
+  try {
+    console.log('🔧 Setting up database tables...');
+
+    // Create tokens table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tokens (
+        id SERIAL PRIMARY KEY,
+        unit VARCHAR(120) UNIQUE NOT NULL,
+        ticker VARCHAR(50),
+        name VARCHAR(100),
+        policy_id VARCHAR(56) NOT NULL,
+        asset_name_hex VARCHAR(64),
+        price DECIMAL(20, 10),
+        volume DECIMAL(20, 6),
+        mcap DECIMAL(20, 6),
+        risk_score INTEGER,
+        top_holder_percentage DECIMAL(5, 2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_unit ON tokens(unit)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_ticker ON tokens(ticker)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_policy_id ON tokens(policy_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_volume ON tokens(volume)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_risk_score ON tokens(risk_score)');
+
+    // Create bubble map tables
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS bubble_map_snapshots (
+        id SERIAL PRIMARY KEY,
+        policy_id VARCHAR(56) NOT NULL,
+        asset_name VARCHAR(64),
+        total_holders INTEGER,
+        risk_score INTEGER,
+        top_holder_percentage DECIMAL(5, 2),
+        holders JSONB,
+        metadata JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_bubble_map_policy ON bubble_map_snapshots(policy_id)');
+
+    // Verify tables
+    const tablesResult = await pool.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+
+    console.log('✅ Database setup completed successfully');
+
+    return {
+      success: true,
+      message: 'Database setup completed successfully',
+      tables: tablesResult.rows.map(row => row.table_name),
+      timestamp: new Date().toISOString()
+    };
+
+  } catch (error) {
+    fastify.log.error('Database setup failed:', error);
+    return reply.status(500).send({
+      success: false,
+      error: 'Database setup failed',
+      details: (error as Error).message
+    });
+  }
+});
+
 // OPTIMIZED: Real-time token risk analysis with caching
 fastify.get('/analyze/:policyId', async (request, reply) => {
   const { policyId } = request.params as { policyId: string };
