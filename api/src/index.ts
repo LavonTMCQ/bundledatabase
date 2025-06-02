@@ -139,9 +139,93 @@ fastify.get('/health', async (request, reply) => {
 // Database setup endpoint for Railway
 fastify.post('/setup-database', async (request, reply) => {
   try {
-    console.log('🔧 Setting up database tables...');
+    console.log('🔧 Setting up complete Cabal database schema...');
 
-    // Create tokens table
+    // Enable UUID extension
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+
+    // Create sync cursor table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sync_cursor(
+        id int PRIMARY KEY DEFAULT 0,
+        max_point text
+      )
+    `);
+
+    // Create token table (singular - as expected by API)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS token (
+        policy_id text PRIMARY KEY,
+        asset_name text,
+        decimals int,
+        first_seen timestamptz DEFAULT now(),
+        market_cap_ada numeric,
+        last_refreshed timestamptz
+      )
+    `);
+
+    // Create wallet table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS wallet (
+        stake_cred text PRIMARY KEY,
+        first_tx bigint,
+        last_tx bigint,
+        flags jsonb DEFAULT '{}'
+      )
+    `);
+
+    // Create token_holding table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS token_holding (
+        policy_id text REFERENCES token,
+        stake_cred text REFERENCES wallet,
+        balance numeric,
+        last_seen timestamptz DEFAULT now(),
+        PRIMARY KEY (policy_id, stake_cred)
+      )
+    `);
+
+    // Create wallet_edge table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS wallet_edge (
+        src text,
+        dst text,
+        relation text,
+        weight numeric,
+        updated_at timestamptz DEFAULT now(),
+        PRIMARY KEY (src, dst, relation)
+      )
+    `);
+
+    // Create cluster table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cluster (
+        cluster_id serial PRIMARY KEY,
+        risk_score numeric,
+        tags text[]
+      )
+    `);
+
+    // Create cluster_member table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cluster_member (
+        cluster_id int REFERENCES cluster,
+        stake_cred text REFERENCES wallet,
+        PRIMARY KEY (cluster_id, stake_cred)
+      )
+    `);
+
+    // Create cluster_score_history table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cluster_score_history (
+        cluster_id int REFERENCES cluster,
+        score numeric,
+        ts timestamptz DEFAULT now(),
+        PRIMARY KEY (cluster_id, ts)
+      )
+    `);
+
+    // Also create the simplified tokens table for Railway compatibility
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tokens (
         id SERIAL PRIMARY KEY,
@@ -160,13 +244,6 @@ fastify.post('/setup-database', async (request, reply) => {
       )
     `);
 
-    // Create indexes
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_unit ON tokens(unit)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_ticker ON tokens(ticker)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_policy_id ON tokens(policy_id)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_volume ON tokens(volume)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_risk_score ON tokens(risk_score)');
-
     // Create bubble map tables
     await pool.query(`
       CREATE TABLE IF NOT EXISTS bubble_map_snapshots (
@@ -182,7 +259,19 @@ fastify.post('/setup-database', async (request, reply) => {
       )
     `);
 
+    // Create indexes for performance
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_unit ON tokens(unit)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_ticker ON tokens(ticker)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_policy_id ON tokens(policy_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_volume ON tokens(volume)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_risk_score ON tokens(risk_score)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_bubble_map_policy ON bubble_map_snapshots(policy_id)');
+
+    // Initialize sync cursor
+    await pool.query(`
+      INSERT INTO sync_cursor(id, max_point) VALUES (0, 'origin')
+      ON CONFLICT (id) DO NOTHING
+    `);
 
     // Verify tables
     const tablesResult = await pool.query(`
@@ -191,11 +280,11 @@ fastify.post('/setup-database', async (request, reply) => {
       ORDER BY table_name
     `);
 
-    console.log('✅ Database setup completed successfully');
+    console.log('✅ Complete Cabal database schema setup completed successfully');
 
     return {
       success: true,
-      message: 'Database setup completed successfully',
+      message: 'Complete Cabal database schema setup completed successfully',
       tables: tablesResult.rows.map(row => row.table_name),
       timestamp: new Date().toISOString()
     };
