@@ -9,21 +9,39 @@ import { TokenStorageService } from './token-storage-service';
 
 // Initialize PostgreSQL connection pool with optimized Railway settings
 const getDatabaseConfig = () => {
-  const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://coldgame@localhost:5432/mister_db';
+  // Try multiple environment variables for Railway
+  const databaseUrl = process.env.DATABASE_URL ||
+                     process.env.POSTGRES_URL ||
+                     process.env.DATABASE_PRIVATE_URL ||
+                     'postgresql://coldgame@localhost:5432/mister_db';
 
   // Railway-specific optimizations
-  const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production';
+  const isRailway = process.env.RAILWAY_ENVIRONMENT ||
+                   process.env.NODE_ENV === 'production' ||
+                   databaseUrl.includes('railway.internal');
+
+  console.log('🔗 Database connection config:', {
+    hasUrl: !!databaseUrl,
+    isRailway,
+    urlHost: databaseUrl.includes('railway.internal') ? 'railway.internal' : 'other',
+    environment: process.env.NODE_ENV
+  });
 
   return {
     connectionString: databaseUrl,
     ssl: isRailway ? { rejectUnauthorized: false } : false,
     max: 20, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 5000, // Increased timeout for Railway
-    acquireTimeoutMillis: 10000, // Time to wait for connection from pool
+    connectionTimeoutMillis: 10000, // Increased timeout for Railway
+    acquireTimeoutMillis: 15000, // Time to wait for connection from pool
     statement_timeout: 30000, // 30 second query timeout
     query_timeout: 30000,
-    application_name: 'mister_risk_api'
+    application_name: 'mister_risk_api',
+    // Railway-specific connection options
+    ...(isRailway && {
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10000,
+    })
   };
 };
 
