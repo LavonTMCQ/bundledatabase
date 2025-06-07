@@ -1,9 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const TokenDatabase = require('./token-database');
+require('dotenv').config();
 
 const app = express();
-const port = 3456;
+const port = process.env.PORT || 3456;
 
 // Middleware
 app.use(cors());

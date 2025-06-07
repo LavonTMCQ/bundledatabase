@@ -1,41 +1,73 @@
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
 
 class TokenDatabase {
   constructor() {
-    this.dbPath = path.join(__dirname, 'tokens.db');
-    this.db = null;
+    // Use environment variable for database connection, fallback to Railway connection
+    const databaseUrl = process.env.DATABASE_URL ||
+                       process.env.POSTGRES_URL ||
+                       process.env.DATABASE_PRIVATE_URL ||
+                       'postgresql://postgres:jnZORZUDtetoUczuKrlvKVNYzrIfLFpc@trolley.proxy.rlwy.net:30487/railway';
+
+    // Railway-specific optimizations
+    const isRailway = process.env.RAILWAY_ENVIRONMENT ||
+                     process.env.NODE_ENV === 'production' ||
+                     databaseUrl.includes('railway.internal');
+
+    this.pool = new Pool({
+      connectionString: databaseUrl,
+      ssl: isRailway ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+      acquireTimeoutMillis: 15000,
+      statement_timeout: 30000,
+      query_timeout: 30000,
+      application_name: 'mister_token_api',
+      ...(isRailway && {
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 10000,
+      })
+    });
+
+    console.log('🔗 Token Database connection config:', {
+      hasUrl: !!databaseUrl,
+      isRailway,
+      urlHost: databaseUrl.includes('railway.internal') ? 'railway.internal' : 'other',
+      environment: process.env.NODE_ENV
+    });
   }
 
   async init() {
-    return new Promise((resolve, reject) => {
-      this.db = new sqlite3.Database(this.dbPath, (err) => {
-        if (err) {
-          console.error('❌ Error opening token database:', err.message);
-          reject(err);
-        } else {
-          console.log('🗄️ Token database connected');
-          this.createTables().then(resolve).catch(reject);
-        }
-      });
-    });
+    try {
+      // Test connection
+      const client = await this.pool.connect();
+      console.log('🗄️ Token database connected (PostgreSQL)');
+      client.release();
+
+      await this.createTables();
+      return Promise.resolve();
+    } catch (err) {
+      console.error('❌ Error connecting to token database:', err.message);
+      return Promise.reject(err);
+    }
   }
 
   async createTables() {
     const createTokensTable = `
       CREATE TABLE IF NOT EXISTS tokens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         policy_id TEXT NOT NULL,
         asset_name_hex TEXT,
         unit TEXT UNIQUE NOT NULL,
         ticker TEXT,
         name TEXT,
-        price REAL,
-        volume_24h REAL,
-        market_cap REAL,
-        circulating_supply REAL,
-        total_supply REAL,
+        price DECIMAL,
+        volume_24h DECIMAL,
+        market_cap DECIMAL,
+        circulating_supply DECIMAL,
+        total_supply DECIMAL,
         decimals INTEGER DEFAULT 0,
         description TEXT,
         website TEXT,
@@ -50,31 +82,31 @@ class TokenDatabase {
         facebook TEXT,
         email TEXT,
         logo_url TEXT,
-        first_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-        is_verified BOOLEAN DEFAULT 0,
-        risk_score REAL,
-        top_holder_percentage REAL,
+        first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_verified BOOLEAN DEFAULT FALSE,
+        risk_score DECIMAL,
+        top_holder_percentage DECIMAL,
         holder_count INTEGER,
         liquidity_pools INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
 
     const createHoldersTable = `
       CREATE TABLE IF NOT EXISTS token_holders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         unit TEXT NOT NULL,
         stake_address TEXT NOT NULL,
-        amount REAL NOT NULL,
-        percentage REAL NOT NULL,
+        amount DECIMAL NOT NULL,
+        percentage DECIMAL NOT NULL,
         rank INTEGER NOT NULL,
         ada_handle TEXT,
-        is_pool BOOLEAN DEFAULT 0,
-        is_exchange BOOLEAN DEFAULT 0,
-        is_burn_wallet BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_pool BOOLEAN DEFAULT FALSE,
+        is_exchange BOOLEAN DEFAULT FALSE,
+        is_burn_wallet BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (unit) REFERENCES tokens (unit),
         UNIQUE(unit, stake_address)
       )
@@ -82,48 +114,42 @@ class TokenDatabase {
 
     const createTickerMappingTable = `
       CREATE TABLE IF NOT EXISTS ticker_mapping (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         ticker TEXT UNIQUE NOT NULL,
         unit TEXT NOT NULL,
         policy_id TEXT NOT NULL,
         asset_name_hex TEXT,
-        confidence_score REAL DEFAULT 1.0,
+        confidence_score DECIMAL DEFAULT 1.0,
         source TEXT DEFAULT 'taptools',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (unit) REFERENCES tokens (unit)
       )
     `;
 
     const createAnalysisHistoryTable = `
       CREATE TABLE IF NOT EXISTS analysis_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         unit TEXT NOT NULL,
-        risk_score REAL,
+        risk_score DECIMAL,
         verdict TEXT,
-        top_holder_percentage REAL,
+        top_holder_percentage DECIMAL,
         holder_count INTEGER,
-        analysis_data TEXT, -- JSON blob
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        analysis_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (unit) REFERENCES tokens (unit)
       )
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.serialize(() => {
-        this.db.run(createTokensTable);
-        this.db.run(createHoldersTable);
-        this.db.run(createTickerMappingTable);
-        this.db.run(createAnalysisHistoryTable, (err) => {
-          if (err) {
-            console.error('❌ Error creating tables:', err.message);
-            reject(err);
-          } else {
-            console.log('✅ Token database tables ready');
-            resolve();
-          }
-        });
-      });
-    });
+    try {
+      await this.pool.query(createTokensTable);
+      await this.pool.query(createHoldersTable);
+      await this.pool.query(createTickerMappingTable);
+      await this.pool.query(createAnalysisHistoryTable);
+      console.log('✅ Token database tables ready (PostgreSQL)');
+    } catch (err) {
+      console.error('❌ Error creating tables:', err.message);
+      throw err;
+    }
   }
 
   // Save or update token information
@@ -151,56 +177,89 @@ class TokenDatabase {
     } = tokenData;
 
     const query = `
-      INSERT OR REPLACE INTO tokens (
+      INSERT INTO tokens (
         policy_id, asset_name_hex, unit, ticker, name, price, volume_24h,
         market_cap, circulating_supply, total_supply, decimals, description,
         website, twitter, discord, telegram, github, reddit, medium,
         youtube, instagram, facebook, email, logo_url, is_verified,
         risk_score, top_holder_percentage, holder_count, liquidity_pools,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, CURRENT_TIMESTAMP)
+      ON CONFLICT (unit) DO UPDATE SET
+        policy_id = EXCLUDED.policy_id,
+        asset_name_hex = EXCLUDED.asset_name_hex,
+        ticker = EXCLUDED.ticker,
+        name = EXCLUDED.name,
+        price = EXCLUDED.price,
+        volume_24h = EXCLUDED.volume_24h,
+        market_cap = EXCLUDED.market_cap,
+        circulating_supply = EXCLUDED.circulating_supply,
+        total_supply = EXCLUDED.total_supply,
+        decimals = EXCLUDED.decimals,
+        description = EXCLUDED.description,
+        website = EXCLUDED.website,
+        twitter = EXCLUDED.twitter,
+        discord = EXCLUDED.discord,
+        telegram = EXCLUDED.telegram,
+        github = EXCLUDED.github,
+        reddit = EXCLUDED.reddit,
+        medium = EXCLUDED.medium,
+        youtube = EXCLUDED.youtube,
+        instagram = EXCLUDED.instagram,
+        facebook = EXCLUDED.facebook,
+        email = EXCLUDED.email,
+        logo_url = EXCLUDED.logo_url,
+        is_verified = EXCLUDED.is_verified,
+        risk_score = EXCLUDED.risk_score,
+        top_holder_percentage = EXCLUDED.top_holder_percentage,
+        holder_count = EXCLUDED.holder_count,
+        liquidity_pools = EXCLUDED.liquidity_pools,
+        updated_at = CURRENT_TIMESTAMP
+      RETURNING id
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.run(query, [
+    try {
+      const result = await this.pool.query(query, [
         policyId, assetNameHex, unit, ticker, name, price, volume24h,
         marketCap, circulatingSupply, totalSupply, decimals, description,
         socialLinks.website, socialLinks.twitter, socialLinks.discord,
         socialLinks.telegram, socialLinks.github, socialLinks.reddit,
         socialLinks.medium, socialLinks.youtube, socialLinks.instagram,
-        socialLinks.facebook, socialLinks.email, logoUrl, isVerified ? 1 : 0,
+        socialLinks.facebook, socialLinks.email, logoUrl, isVerified,
         riskScore, topHolderPercentage, holderCount, liquidityPools
-      ], function(err) {
-        if (err) {
-          console.error('❌ Error saving token:', err.message);
-          reject(err);
-        } else {
-          console.log(`✅ Saved token: ${ticker || name || 'Unknown'}`);
-          resolve(this.lastID);
-        }
-      });
-    });
+      ]);
+
+      console.log(`✅ Saved token: ${ticker || name || 'Unknown'}`);
+      return result.rows[0]?.id;
+    } catch (err) {
+      console.error('❌ Error saving token:', err.message);
+      throw err;
+    }
   }
 
   // Save ticker mapping for quick lookups
   async saveTickerMapping(ticker, unit, policyId, assetNameHex = '', confidenceScore = 1.0, source = 'taptools') {
     const query = `
-      INSERT OR REPLACE INTO ticker_mapping (
+      INSERT INTO ticker_mapping (
         ticker, unit, policy_id, asset_name_hex, confidence_score, source
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (ticker) DO UPDATE SET
+        unit = EXCLUDED.unit,
+        policy_id = EXCLUDED.policy_id,
+        asset_name_hex = EXCLUDED.asset_name_hex,
+        confidence_score = EXCLUDED.confidence_score,
+        source = EXCLUDED.source
+      RETURNING id
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.run(query, [ticker, unit, policyId, assetNameHex, confidenceScore, source], function(err) {
-        if (err) {
-          console.error('❌ Error saving ticker mapping:', err.message);
-          reject(err);
-        } else {
-          console.log(`✅ Mapped ticker: ${ticker} → ${unit.substring(0, 20)}...`);
-          resolve(this.lastID);
-        }
-      });
-    });
+    try {
+      const result = await this.pool.query(query, [ticker, unit, policyId, assetNameHex, confidenceScore, source]);
+      console.log(`✅ Mapped ticker: ${ticker} → ${unit.substring(0, 20)}...`);
+      return result.rows[0]?.id;
+    } catch (err) {
+      console.error('❌ Error saving ticker mapping:', err.message);
+      throw err;
+    }
   }
 
   // Find token by ticker
@@ -209,54 +268,45 @@ class TokenDatabase {
       SELECT t.*, tm.confidence_score
       FROM tokens t
       JOIN ticker_mapping tm ON t.unit = tm.unit
-      WHERE tm.ticker = ? COLLATE NOCASE
+      WHERE LOWER(tm.ticker) = LOWER($1)
       ORDER BY tm.confidence_score DESC, t.updated_at DESC
       LIMIT 1
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.get(query, [ticker], (err, row) => {
-        if (err) {
-          console.error('❌ Error finding token by ticker:', err.message);
-          reject(err);
-        } else {
-          resolve(row || null);
-        }
-      });
-    });
+    try {
+      const result = await this.pool.query(query, [ticker]);
+      return result.rows[0] || null;
+    } catch (err) {
+      console.error('❌ Error finding token by ticker:', err.message);
+      throw err;
+    }
   }
 
   // Find token by policy ID
   async findTokenByPolicyId(policyId, assetNameHex = '') {
     const unit = policyId + assetNameHex;
-    const query = `SELECT * FROM tokens WHERE unit = ? OR policy_id = ? ORDER BY updated_at DESC LIMIT 1`;
+    const query = `SELECT * FROM tokens WHERE unit = $1 OR policy_id = $2 ORDER BY updated_at DESC LIMIT 1`;
 
-    return new Promise((resolve, reject) => {
-      this.db.get(query, [unit, policyId], (err, row) => {
-        if (err) {
-          console.error('❌ Error finding token by policy ID:', err.message);
-          reject(err);
-        } else {
-          resolve(row || null);
-        }
-      });
-    });
+    try {
+      const result = await this.pool.query(query, [unit, policyId]);
+      return result.rows[0] || null;
+    } catch (err) {
+      console.error('❌ Error finding token by policy ID:', err.message);
+      throw err;
+    }
   }
 
   // Find token by unit
   async findTokenByUnit(unit) {
-    const query = `SELECT * FROM tokens WHERE unit = ?`;
+    const query = `SELECT * FROM tokens WHERE unit = $1`;
 
-    return new Promise((resolve, reject) => {
-      this.db.get(query, [unit], (err, row) => {
-        if (err) {
-          console.error('❌ Error finding token by unit:', err.message);
-          reject(err);
-        } else {
-          resolve(row || null);
-        }
-      });
-    });
+    try {
+      const result = await this.pool.query(query, [unit]);
+      return result.rows[0] || null;
+    } catch (err) {
+      console.error('❌ Error finding token by unit:', err.message);
+      throw err;
+    }
   }
 
   // Search tokens by name or ticker
@@ -265,56 +315,54 @@ class TokenDatabase {
       SELECT t.*, tm.ticker as mapped_ticker
       FROM tokens t
       LEFT JOIN ticker_mapping tm ON t.unit = tm.unit
-      WHERE t.ticker LIKE ? OR t.name LIKE ? OR tm.ticker LIKE ?
+      WHERE t.ticker ILIKE $1 OR t.name ILIKE $2 OR tm.ticker ILIKE $3
       ORDER BY
         CASE
-          WHEN t.ticker = ? THEN 1
-          WHEN tm.ticker = ? THEN 2
-          WHEN t.name = ? THEN 3
+          WHEN t.ticker = $4 THEN 1
+          WHEN tm.ticker = $5 THEN 2
+          WHEN t.name = $6 THEN 3
           ELSE 4
         END,
-        t.volume_24h DESC
-      LIMIT ?
+        t.volume_24h DESC NULLS LAST
+      LIMIT $7
     `;
 
     const searchPattern = `%${searchTerm}%`;
 
-    return new Promise((resolve, reject) => {
-      this.db.all(query, [
+    try {
+      const result = await this.pool.query(query, [
         searchPattern, searchPattern, searchPattern,
         searchTerm, searchTerm, searchTerm, limit
-      ], (err, rows) => {
-        if (err) {
-          console.error('❌ Error searching tokens:', err.message);
-          reject(err);
-        } else {
-          resolve(rows || []);
-        }
-      });
-    });
+      ]);
+      return result.rows || [];
+    } catch (err) {
+      console.error('❌ Error searching tokens:', err.message);
+      throw err;
+    }
   }
 
   // Get all tokens with pagination
   async getAllTokens(page = 1, limit = 50, orderBy = 'volume_24h DESC') {
     const offset = (page - 1) * limit;
+    // Sanitize orderBy to prevent SQL injection
+    const allowedOrderBy = ['volume_24h DESC', 'volume_24h ASC', 'created_at DESC', 'created_at ASC', 'name ASC', 'name DESC'];
+    const safeOrderBy = allowedOrderBy.includes(orderBy) ? orderBy : 'volume_24h DESC';
+
     const query = `
       SELECT t.*, tm.ticker as mapped_ticker
       FROM tokens t
       LEFT JOIN ticker_mapping tm ON t.unit = tm.unit
-      ORDER BY ${orderBy}
-      LIMIT ? OFFSET ?
+      ORDER BY ${safeOrderBy} NULLS LAST
+      LIMIT $1 OFFSET $2
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.all(query, [limit, offset], (err, rows) => {
-        if (err) {
-          console.error('❌ Error getting tokens:', err.message);
-          reject(err);
-        } else {
-          resolve(rows || []);
-        }
-      });
-    });
+    try {
+      const result = await this.pool.query(query, [limit, offset]);
+      return result.rows || [];
+    } catch (err) {
+      console.error('❌ Error getting tokens:', err.message);
+      throw err;
+    }
   }
 
   // Save analysis history
@@ -322,21 +370,19 @@ class TokenDatabase {
     const query = `
       INSERT INTO analysis_history (
         unit, risk_score, verdict, top_holder_percentage, holder_count, analysis_data
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id
     `;
 
-    return new Promise((resolve, reject) => {
-      this.db.run(query, [
-        unit, riskScore, verdict, topHolderPercentage, holderCount, JSON.stringify(analysisData)
-      ], function(err) {
-        if (err) {
-          console.error('❌ Error saving analysis history:', err.message);
-          reject(err);
-        } else {
-          resolve(this.lastID);
-        }
-      });
-    });
+    try {
+      const result = await this.pool.query(query, [
+        unit, riskScore, verdict, topHolderPercentage, holderCount, analysisData
+      ]);
+      return result.rows[0]?.id;
+    } catch (err) {
+      console.error('❌ Error saving analysis history:', err.message);
+      throw err;
+    }
   }
 
   // Get database statistics
@@ -345,7 +391,7 @@ class TokenDatabase {
       totalTokens: 'SELECT COUNT(*) as count FROM tokens',
       totalMappings: 'SELECT COUNT(*) as count FROM ticker_mapping',
       totalAnalyses: 'SELECT COUNT(*) as count FROM analysis_history',
-      recentTokens: 'SELECT COUNT(*) as count FROM tokens WHERE created_at > datetime("now", "-24 hours")',
+      recentTokens: 'SELECT COUNT(*) as count FROM tokens WHERE created_at > NOW() - INTERVAL \'24 hours\'',
       topVolumeTokens: 'SELECT ticker, name, volume_24h FROM tokens WHERE volume_24h > 0 ORDER BY volume_24h DESC LIMIT 5'
     };
 
@@ -353,23 +399,15 @@ class TokenDatabase {
 
     for (const [key, query] of Object.entries(queries)) {
       try {
+        const result = await this.pool.query(query);
         if (key === 'topVolumeTokens') {
-          stats[key] = await new Promise((resolve, reject) => {
-            this.db.all(query, (err, rows) => {
-              if (err) reject(err);
-              else resolve(rows);
-            });
-          });
+          stats[key] = result.rows;
         } else {
-          stats[key] = await new Promise((resolve, reject) => {
-            this.db.get(query, (err, row) => {
-              if (err) reject(err);
-              else resolve(row.count);
-            });
-          });
+          stats[key] = parseInt(result.rows[0]?.count || 0);
         }
       } catch (error) {
-        stats[key] = 0;
+        console.error(`❌ Error getting ${key} stats:`, error.message);
+        stats[key] = key === 'topVolumeTokens' ? [] : 0;
       }
     }
 
@@ -377,15 +415,14 @@ class TokenDatabase {
   }
 
   // Close database connection
-  close() {
-    if (this.db) {
-      this.db.close((err) => {
-        if (err) {
-          console.error('❌ Error closing database:', err.message);
-        } else {
-          console.log('🗄️ Token database connection closed');
-        }
-      });
+  async close() {
+    if (this.pool) {
+      try {
+        await this.pool.end();
+        console.log('🗄️ Token database connection closed');
+      } catch (err) {
+        console.error('❌ Error closing database:', err.message);
+      }
     }
   }
 }
