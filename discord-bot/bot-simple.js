@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, Events } = require('discord.js');
 const axios = require('axios');
 const sqlite3 = require('sqlite3').verbose();
-const fetch = require('node-fetch');
+// Using built-in fetch (Node.js 18+) or axios for HTTP requests
 const SmartCommandHandler = require('./smart-command-handler');
 require('dotenv').config();
 
@@ -2490,8 +2490,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         try {
           // Call the advanced relationship analysis endpoint
-          const response = await fetch(`${process.env.RISK_API_URL}/analyze/${policyId}/relationships?assetName=${encodeURIComponent(ticker ? tickerToHex(ticker) : '')}`);
-          const result = await response.json();
+          const response = await axios.get(`${process.env.RISK_API_URL}/analyze/${policyId}/relationships?assetName=${encodeURIComponent(ticker ? tickerToHex(ticker) : '')}`);
+          const result = response.data;
 
           if (result.error) {
             const errorEmbed = createErrorEmbed('Relationship Analysis Error', result.error);
@@ -2902,10 +2902,10 @@ client.on(Events.Error, (error) => {
 });
 
 // Login to Discord
-const token = process.env.DISCORD_TOKEN;
+const token = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_TOKEN;
 
 if (!token) {
-  console.error('❌ DISCORD_TOKEN is not set in environment variables');
+  console.error('❌ DISCORD_BOT_TOKEN is not set in environment variables');
   process.exit(1);
 }
 
