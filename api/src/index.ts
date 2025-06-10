@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import { Pool } from 'pg';
+import axios from 'axios';
 import { BlockfrostService } from './blockfrost-service';
 import { ResponseFormatter } from './response-formatter';
 import { DatabaseService } from './database-service';
@@ -115,6 +116,297 @@ setInterval(() => {
     }
   }
 }, 10 * 60 * 1000);
+
+// ===== TAPTOOLS API INTEGRATION =====
+const TAPTOOLS_API_KEY = process.env.TAPTOOLS_API_KEY || 'WghkJaZlDWYdQFsyt3uiLdTIOYnR5uhO';
+const TAPTOOLS_BASE_URL = 'https://openapi.taptools.io/api/v1';
+
+// TapTools API helper function
+async function makeTapToolsRequest(endpoint: string, params: any = {}): Promise<any> {
+  try {
+    console.log(`🔗 TapTools API call: ${endpoint}`);
+
+    const response = await axios.get(`${TAPTOOLS_BASE_URL}${endpoint}`, {
+      headers: {
+        'x-api-key': TAPTOOLS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      params,
+      timeout: 30000
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error(`❌ TapTools API error for ${endpoint}:`, error);
+    if (axios.isAxiosError(error) && error.response) {
+      console.error(`Status: ${error.response.status}, Data:`, error.response.data);
+    }
+    throw new Error(`TapTools API failed: ${error}`);
+  }
+}
+
+// Fetch token holder data from TapTools API
+async function fetchRealHolderData(policyId: string): Promise<any[]> {
+  console.log(`👥 Fetching real holder data for: ${policyId.substring(0, 20)}...`);
+
+  const holders = await makeTapToolsRequest('/token/holders/top', {
+    unit: policyId,
+    page: 1,
+    perPage: 100
+  });
+
+  if (holders && Array.isArray(holders)) {
+    console.log(`👥 Found ${holders.length} holders for token`);
+    return holders;
+  }
+
+  return [];
+}
+
+// Analyze stake address clustering
+async function analyzeStakeClustering(policyId: string, holderData: any[], startTime: number): Promise<any> {
+  try {
+    console.log(`🔍 Analyzing stake clustering for ${holderData.length} holders...`);
+
+    // Group wallets by stake address
+    const stakeGroups = new Map<string, any[]>();
+    const processedHolders: any[] = [];
+    const connections: any[] = [];
+    const clusters: any[] = [];
+
+    // Process each holder
+    holderData.forEach((holder, index) => {
+      const stakeAddress = holder.address; // TapTools provides stake addresses directly
+
+      if (!stakeGroups.has(stakeAddress)) {
+        stakeGroups.set(stakeAddress, []);
+      }
+      stakeGroups.get(stakeAddress)!.push(holder);
+
+      // Create processed holder object
+      processedHolders.push({
+        address: holder.address,
+        stakeAddress: stakeAddress,
+        amount: holder.amount || 0,
+        percentage: holder.percentage || 0,
+        rank: index + 1,
+        handles: [], // Will be populated if needed
+        riskScore: 0.1,
+        riskFlags: [],
+        clusterId: `stake_${index + 1}`,
+        isIsolated: true, // Will be updated if multi-wallet stake found
+        walletIndex: 0,
+        totalWalletsInStake: 1
+      });
+    });
+
+    // Analyze stake groups for multi-wallet detection
+    let multiWalletStakes = 0;
+    let clusterId = 1;
+
+    stakeGroups.forEach((wallets, stakeAddress) => {
+      if (wallets.length > 1) {
+        multiWalletStakes++;
+
+        // Create connections between wallets with same stake
+        for (let i = 0; i < wallets.length; i++) {
+          for (let j = i + 1; j < wallets.length; j++) {
+            connections.push({
+              from: wallets[i].address,
+              to: wallets[j].address,
+              type: 'same_stake',
+              strength: 1.0,
+              evidence: 'Same stake address',
+              stakeAddress: stakeAddress
+            });
+          }
+        }
+
+        // Update holders to mark as connected
+        wallets.forEach((wallet, index) => {
+          const holderIndex = processedHolders.findIndex(h => h.address === wallet.address);
+          if (holderIndex >= 0) {
+            processedHolders[holderIndex].isIsolated = false;
+            processedHolders[holderIndex].walletIndex = index;
+            processedHolders[holderIndex].totalWalletsInStake = wallets.length;
+          }
+        });
+      }
+
+      // Create cluster for this stake group
+      clusters.push({
+        id: `stake_${clusterId++}`,
+        stakeAddress: stakeAddress,
+        type: wallets.length > 1 ? 'stake_group' : 'single_wallet',
+        wallets: wallets.map(w => w.address),
+        totalPercentage: wallets.reduce((sum, w) => sum + (w.percentage || 0), 0),
+        walletCount: wallets.length,
+        connectionStrength: wallets.length > 1 ? 1.0 : 0,
+        riskScore: wallets.length > 1 ? 0.3 : 0.1,
+        suspicious: wallets.length > 5, // Flag clusters with many wallets
+        riskFactors: wallets.length > 5 ? ['Large wallet cluster'] : [],
+        centerNode: wallets[0].address,
+        handles: [] // Will be populated if needed
+      });
+    });
+
+    return {
+      metadata: {
+        token: policyId.substring(0, 8) + '...',
+        totalHolders: processedHolders.length,
+        totalClusters: clusters.length,
+        stakeConnections: connections.length,
+        isolatedWallets: processedHolders.filter(h => h.isIsolated).length,
+        multiWalletStakes: multiWalletStakes,
+        analysisType: 'stake_clustering_only',
+        processingTime: `${Date.now() - startTime}ms`
+      },
+      holders: processedHolders,
+      connections: connections,
+      clusters: clusters,
+      riskAnalysis: {
+        overallRisk: multiWalletStakes > 0 ? 0.2 : 0.1,
+        suspiciousClusters: clusters.filter(c => c.suspicious).length,
+        totalConnections: connections.length,
+        strongConnections: connections.length,
+        networkDensity: connections.length / (processedHolders.length * (processedHolders.length - 1) / 2),
+        concentrationRisk: Math.max(...processedHolders.map(h => h.percentage)) / 100,
+        topRisks: []
+      },
+      visualization: {
+        recommendedLayout: 'force_directed',
+        nodeColors: {
+          isolated: '#64748b',
+          connected: '#22c55e',
+          suspicious: '#ef4444',
+          whale: '#f59e0b'
+        },
+        edgeTypes: {
+          same_stake: { color: '#2196f3', width: 3 }
+        }
+      }
+    };
+
+  } catch (error) {
+    console.error('Stake clustering analysis error:', error);
+    throw new Error(`Failed to analyze stake clustering: ${error}`);
+  }
+}
+
+// Generate empty network data for tokens with no holders
+function generateEmptyNetworkData(policyId: string): any {
+  return {
+    metadata: {
+      token: policyId.substring(0, 8) + '...',
+      totalHolders: 0,
+      totalClusters: 0,
+      stakeConnections: 0,
+      isolatedWallets: 0,
+      multiWalletStakes: 0,
+      analysisType: 'stake_clustering_only',
+      processingTime: '0ms'
+    },
+    holders: [],
+    connections: [],
+    clusters: [],
+    riskAnalysis: {
+      overallRisk: 0,
+      suspiciousClusters: 0,
+      totalConnections: 0,
+      strongConnections: 0,
+      networkDensity: 0,
+      concentrationRisk: 0,
+      topRisks: []
+    },
+    visualization: {
+      recommendedLayout: 'force_directed',
+      nodeColors: {
+        isolated: '#64748b',
+        connected: '#22c55e',
+        suspicious: '#ef4444',
+        whale: '#f59e0b'
+      },
+      edgeTypes: {
+        same_stake: { color: '#2196f3', width: 3 }
+      }
+    }
+  };
+}
+
+// Database caching functions for wallet network data
+async function getCachedWalletNetwork(policyId: string): Promise<any | null> {
+  try {
+    const result = await pool.query(`
+      SELECT network_data, created_at, expires_at
+      FROM wallet_network_cache
+      WHERE policy_id = $1 AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [policyId]);
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    console.log(`📦 Found cached wallet network data for ${policyId}`);
+    return {
+      networkData: result.rows[0].network_data,
+      createdAt: result.rows[0].created_at,
+      expiresAt: result.rows[0].expires_at
+    };
+  } catch (error) {
+    console.error('Error getting cached wallet network:', error);
+    return null;
+  }
+}
+
+async function setCachedWalletNetwork(policyId: string, networkData: any, options: any = {}): Promise<void> {
+  try {
+    const expiresAt = new Date(Date.now() + (6 * 60 * 60 * 1000)); // 6 hours TTL
+    const dataSize = JSON.stringify(networkData).length;
+
+    await pool.query(`
+      INSERT INTO wallet_network_cache (
+        policy_id, network_data, total_holders, total_clusters, total_connections,
+        overall_risk, suspicious_clusters, strong_connections, network_density,
+        expires_at, processing_status, processing_completed_at, processing_duration_ms, data_size_bytes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), $12, $13)
+      ON CONFLICT (policy_id) DO UPDATE SET
+        network_data = EXCLUDED.network_data,
+        total_holders = EXCLUDED.total_holders,
+        total_clusters = EXCLUDED.total_clusters,
+        total_connections = EXCLUDED.total_connections,
+        overall_risk = EXCLUDED.overall_risk,
+        suspicious_clusters = EXCLUDED.suspicious_clusters,
+        strong_connections = EXCLUDED.strong_connections,
+        network_density = EXCLUDED.network_density,
+        updated_at = NOW(),
+        expires_at = EXCLUDED.expires_at,
+        processing_status = EXCLUDED.processing_status,
+        processing_completed_at = EXCLUDED.processing_completed_at,
+        processing_duration_ms = EXCLUDED.processing_duration_ms,
+        data_size_bytes = EXCLUDED.data_size_bytes
+    `, [
+      policyId,
+      JSON.stringify(networkData),
+      networkData.metadata?.totalHolders || 0,
+      networkData.metadata?.totalClusters || 0,
+      networkData.metadata?.stakeConnections || 0,
+      networkData.riskAnalysis?.overallRisk || 0,
+      networkData.riskAnalysis?.suspiciousClusters || 0,
+      networkData.riskAnalysis?.strongConnections || 0,
+      networkData.riskAnalysis?.networkDensity || 0,
+      expiresAt,
+      'completed',
+      options.processingDurationMs || 0,
+      dataSize
+    ]);
+
+    console.log(`💾 Cached wallet network data for ${policyId} (${dataSize} bytes)`);
+  } catch (error) {
+    console.error('Error caching wallet network:', error);
+  }
+}
 
 // Health check endpoint with database connection test
 fastify.get('/health', async (request, reply) => {
@@ -259,6 +551,34 @@ fastify.post('/setup-database', async (request, reply) => {
       )
     `);
 
+    // Create wallet network cache table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS wallet_network_cache (
+        id SERIAL PRIMARY KEY,
+        policy_id VARCHAR(56) NOT NULL UNIQUE,
+        token_name VARCHAR(255),
+        token_ticker VARCHAR(20),
+        network_data JSONB NOT NULL,
+        total_holders INTEGER NOT NULL DEFAULT 0,
+        total_clusters INTEGER NOT NULL DEFAULT 0,
+        total_connections INTEGER NOT NULL DEFAULT 0,
+        analysis_depth INTEGER NOT NULL DEFAULT 0,
+        overall_risk DECIMAL(3,2) DEFAULT 0.00,
+        suspicious_clusters INTEGER DEFAULT 0,
+        strong_connections INTEGER DEFAULT 0,
+        network_density DECIMAL(5,4) DEFAULT 0.0000,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        processing_status VARCHAR(20) DEFAULT 'pending',
+        processing_started_at TIMESTAMP WITH TIME ZONE,
+        processing_completed_at TIMESTAMP WITH TIME ZONE,
+        error_message TEXT,
+        processing_duration_ms INTEGER,
+        data_size_bytes INTEGER
+      )
+    `);
+
     // Create indexes for performance
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_unit ON tokens(unit)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_ticker ON tokens(ticker)');
@@ -266,6 +586,9 @@ fastify.post('/setup-database', async (request, reply) => {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_volume ON tokens(volume)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_tokens_risk_score ON tokens(risk_score)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_bubble_map_policy ON bubble_map_snapshots(policy_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_wallet_network_cache_policy_id ON wallet_network_cache(policy_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_wallet_network_cache_status ON wallet_network_cache(processing_status)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_wallet_network_cache_expires ON wallet_network_cache(expires_at)');
 
     // Initialize sync cursor
     await pool.query(`
@@ -1438,84 +1761,64 @@ const NETWORK_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 fastify.get('/api/wallet-network/:unit', async (request, reply) => {
   try {
     const { unit } = request.params as { unit: string };
+    const { force } = request.query as { force?: string };
 
-    // Check cache first
-    const cacheKey = `${unit}_stake_clustering`;
-    const cached = networkCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < NETWORK_CACHE_TTL) {
-      console.log(`🚀 Returning cached stake clustering for: ${unit}`);
-      return cached.data;
+    // Get the policy ID from unit (first 56 characters)
+    const policyId = unit.substring(0, 56);
+
+    // Check database cache first (unless force=true)
+    if (force !== 'true') {
+      const cached = await getCachedWalletNetwork(policyId);
+      if (cached) {
+        console.log(`🚀 Returning cached wallet network data for: ${policyId}`);
+        return {
+          ...cached.networkData,
+          _cache: { cached: true, processed: false, createdAt: cached.createdAt }
+        };
+      }
     }
 
-    console.log(`🔗 Analyzing stake clustering for: ${unit}`);
+    console.log(`🔗 Processing wallet network data for: ${policyId}...`);
     const startTime = Date.now();
 
-    // Get the policy ID from unit
-    const policyId = unit.substring(0, 56);
-    const assetName = unit.substring(56);
+    // Fetch real holder data from TapTools API
+    const holderData = await fetchRealHolderData(policyId);
 
-    // Get holder data from existing endpoint
-    const holderResponse = await fetch(`http://localhost:4000/analyze/${policyId}?assetName=${assetName}`);
-    const holderData: any = await holderResponse.json();
-
-    if (!holderData.holders) {
-      return reply.status(404).send({ error: 'No holder data found' });
+    if (!holderData || holderData.length === 0) {
+      console.log(`❌ No holder data found for ${policyId}`);
+      return reply.status(200).send(generateEmptyNetworkData(policyId));
     }
 
-    // Process top 100 holders only for performance
-    const topHolders = holderData.holders.slice(0, 100);
+    // Analyze stake address clustering
+    const networkData = await analyzeStakeClustering(policyId, holderData, startTime);
 
-    // Build real stake clustering (no simulated data)
-    const { holders, connections, clusters, stats } = buildRealStakeClustering(topHolders);
+    // Cache the results in database
+    const processingTime = Date.now() - startTime;
+    await setCachedWalletNetwork(policyId, networkData, {
+      processingDurationMs: processingTime
+    });
 
+    console.log(`✅ Completed wallet network analysis for ${policyId} in ${processingTime}ms`);
+
+    // Add cache metadata
     const response = {
-      metadata: {
-        token: getTokenName(assetName),
-        unit,
-        totalHolders: holders.length,
-        totalClusters: clusters.length,
-        stakeConnections: connections.length,
-        isolatedWallets: stats.isolatedWallets,
-        multiWalletStakes: stats.multiWalletStakes,
-        analysisType: 'stake_clustering_only',
-        lastUpdated: new Date().toISOString(),
-        dataFreshness: '5m',
-        processingTime: `${Date.now() - startTime}ms`
-      },
-      holders,
-      connections,
-      clusters: clusters.sort((a, b) => b.totalPercentage - a.totalPercentage),
-      riskAnalysis: {
-        overallRisk: stats.suspiciousClusters / Math.max(clusters.length, 1),
-        suspiciousClusters: stats.suspiciousClusters,
-        totalConnections: connections.length,
-        strongConnections: connections.length, // All stake connections are strong
-        networkDensity: connections.length / (holders.length * (holders.length - 1)),
-        topRisks: buildStakeRisks(clusters, holders)
-      },
-      visualization: {
-        recommendedLayout: 'force_directed',
-        nodeColors: {
-          isolated: '#64748b',      // Grey for single wallets
-          connected: '#22c55e',     // Green for multi-wallet stakes
-          suspicious: '#ef4444',    // Red for high concentration
-          whale: '#f59e0b'          // Orange for large holders
-        },
-        edgeTypes: {
-          same_stake: { color: '#2196f3', width: 3 }  // Blue for stake connections
-        }
+      ...networkData,
+      _cache: {
+        cached: false,
+        processed: true,
+        processingTime
       }
     };
 
-    // Cache the response
-    networkCache.set(cacheKey, { data: response, timestamp: Date.now() });
-
-    console.log(`✅ Stake clustering completed in ${Date.now() - startTime}ms`);
     return response;
 
   } catch (error) {
     fastify.log.error('Error generating stake clustering:', error);
-    return reply.status(500).send({ error: 'Failed to generate stake clustering' });
+    return reply.status(500).send({
+      error: 'Failed to generate stake clustering',
+      details: (error as Error).message,
+      policyId: (request.params as { unit: string }).unit.substring(0, 56)
+    });
   }
 });
 

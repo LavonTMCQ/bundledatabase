@@ -3,6 +3,7 @@ const TokenDatabase = require('./token-database');
 const SuperDeepAnalysis = require('./super-deep-analysis');
 const GoldStandardAnalysis = require('./gold-standard-analysis');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+require('dotenv').config();
 
 class AutoMonitor {
   constructor() {

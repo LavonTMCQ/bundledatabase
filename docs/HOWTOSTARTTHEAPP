@@ -1,11 +1,11 @@
 # 1. Risk Analysis API
-cd risk-analysis && node server.js
+cd /Users/coldgame/Documents/augment-projects/cabal-database/api && npm start
 
 # 2. Token Database API
-cd token-api && node server.js
+cd /Users/coldgame/Documents/augment-projects/cabal-database/monitoring && node token-api.js
 
 # 3. Discord Bot
 cd discord-bot && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node bot-simple.js
 
 # 4. Auto-Monitor
-cd monitoring && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node auto-monitor.js start
+cd /Users/coldgame/Documents/augment-projects/cabal-database/monitoring && DISCORD_BOT_TOKEN=MTM3Njc3MjQ5OTAzMDY3NTU0Nw.Gxsu42.MP40_BZiuJoJha3OKDhRDnjsbHhee9gjD6ZxXA node auto-monitor.js start
