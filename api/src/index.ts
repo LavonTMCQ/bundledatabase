@@ -428,6 +428,35 @@ fastify.get('/health', async (request, reply) => {
   }
 });
 
+// Debug endpoint to test TapTools API
+fastify.get('/debug/taptools/:policyId', async (request, reply) => {
+  try {
+    const { policyId } = request.params as { policyId: string };
+
+    console.log(`🔍 Debug: Testing TapTools API for ${policyId}`);
+
+    // Test TapTools API call
+    const holders = await fetchRealHolderData(policyId);
+
+    return {
+      success: true,
+      policyId,
+      holdersCount: holders.length,
+      sampleHolders: holders.slice(0, 3),
+      tapToolsApiKey: TAPTOOLS_API_KEY ? 'SET' : 'NOT_SET',
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Debug TapTools error:', error);
+    return reply.status(500).send({
+      success: false,
+      error: (error as Error).message,
+      policyId: (request.params as { policyId: string }).policyId,
+      tapToolsApiKey: TAPTOOLS_API_KEY ? 'SET' : 'NOT_SET'
+    });
+  }
+});
+
 // Database setup endpoint for Railway
 fastify.post('/setup-database', async (request, reply) => {
   try {
