@@ -687,9 +687,9 @@ class AutoMonitor {
       }
     });
 
-    const PORT = 4001; // Different port from Risk API
+    const PORT = process.env.PORT || 4001; // Use Railway's PORT or fallback to 4001
     app.listen(PORT, () => {
-      console.log(`🌐 Auto-monitor HTTP server running on http://localhost:${PORT}`);
+      console.log(`🌐 Auto-monitor HTTP server running on port ${PORT}`);
       console.log(`📊 Available endpoints:`);
       console.log(`   GET /status - Get monitoring status`);
       console.log(`   GET /health - Health check`);
