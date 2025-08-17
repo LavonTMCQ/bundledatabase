@@ -39,9 +39,9 @@ class AutoMonitor {
       // Bridge tokens
       bridgeTokens: ['rsERG', 'rsADA', 'rsBTC', 'rsETH', 'WETH', 'WBTC', 'WADA'],
       // Infrastructure tokens that naturally have high concentration
-      infrastructure: ['MIN', 'SUNDAE', 'MILK', 'LENFI'],
+      infrastructure: ['MIN', 'SUNDAE', 'MILK', 'LENFI', 'COPI', 'WMT', 'INDY'],
       // Known safe tokens that might trigger false positives
-      knownSafe: ['ADA', 'CARDANO']
+      knownSafe: ['ADA', 'CARDANO', 'HOSKY', 'STRIKE', 'AGENT', 'SNEK', 'IAG', 'WMTX', 'CHAD']
     };
   }
 
@@ -156,10 +156,10 @@ class AutoMonitor {
     // Run immediately
     await this.runMonitoringCycle();
 
-    // Then run every 2 hours
+    // Then run every 4 hours (optimized to reduce API calls)
     this.monitoringInterval = setInterval(async () => {
       await this.runMonitoringCycle();
-    }, 2 * 60 * 60 * 1000); // 2 hours in milliseconds
+    }, 4 * 60 * 60 * 1000); // 4 hours in milliseconds
 
     console.log('✅ Automated monitoring started');
   }
@@ -522,7 +522,7 @@ class AutoMonitor {
       tokensMonitored: this.knownTokens.size,
       lastCheck: this.lastCheckTime || 'Never',
       alertsTriggered: this.suspiciousTokens.length,
-      nextCheck: this.isRunning ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : 'Not scheduled',
+      nextCheck: this.isRunning ? new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString() : 'Not scheduled',
       uptime: process.uptime(),
       mode: 'Production'
     };

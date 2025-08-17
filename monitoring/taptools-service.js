@@ -5,7 +5,7 @@ const TokenDatabase = require('./token-database');
 require('dotenv').config();
 
 // TapTools Configuration
-const TAPTOOLS_API_KEY = 'WghkJaZlDWYdQFsyt3uiLdTIOYnR5uhO';
+const TAPTOOLS_API_KEY = 'ItDt8Q9DI6Aa4Rc6yDn627cvBxAdRD2X';
 
 // ADA Handle Policy ID from the guide
 const HANDLE_POLICY_ID = 'f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a';
@@ -31,6 +31,33 @@ class TapToolsService {
       sessionStart: Date.now(),
       lastReset: Date.now()
     };
+
+    // Cache system for API responses
+    this.cache = {
+      marketCap: new Map(), // unit -> {data, timestamp}
+      liquidity: new Map(), // unit -> {data, timestamp}
+      holders: new Map(), // unit -> {data, timestamp}
+      topVolume: new Map() // timeframe -> {data, timestamp}
+    };
+    
+    // Cache durations (in milliseconds)
+    this.CACHE_DURATION = {
+      marketCap: 30 * 60 * 1000, // 30 minutes for market cap
+      liquidity: 60 * 60 * 1000, // 1 hour for liquidity pools
+      holders: 15 * 60 * 1000, // 15 minutes for holders
+      topVolume: 10 * 60 * 1000 // 10 minutes for top volume
+    };
+
+    // Known safe tokens to skip analysis
+    this.SAFE_TOKENS = new Set([
+      // Major tokens
+      'ADA', 'HOSKY', 'MIN', 'SUNDAE', 'MILK', 'LENFI', 'COPI', 'WMT', 'INDY',
+      'STRIKE', 'AGENT', 'SNEK', 'IAG', 'WMTX', 'CHAD',
+      // Stablecoins
+      'DJED', 'USDM', 'iUSD', 'USDA', 'USDC', 'USDT', 'DAI', 'BUSD',
+      // Bridge tokens
+      'rsERG', 'rsADA', 'rsBTC', 'rsETH', 'WETH', 'WBTC', 'WADA'
+    ]);
   }
 
   async init() {
@@ -495,6 +522,29 @@ class TapToolsService {
     console.log('');
   }
 
+  // Check if cached data is still valid
+  isCacheValid(timestamp, duration) {
+    return (Date.now() - timestamp) < duration;
+  }
+
+  // Get from cache if valid
+  getFromCache(cacheType, key, duration) {
+    const cached = this.cache[cacheType].get(key);
+    if (cached && this.isCacheValid(cached.timestamp, duration)) {
+      console.log(`📦 Cache hit for ${cacheType}:${key}`);
+      return cached.data;
+    }
+    return null;
+  }
+
+  // Save to cache
+  saveToCache(cacheType, key, data) {
+    this.cache[cacheType].set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
   async makeTapToolsRequest(endpoint, params = {}) {
     try {
       // Track the API call
@@ -520,6 +570,13 @@ class TapToolsService {
   }
 
   async getTopVolumeTokens(timeframe = '1h', limit = 50) {
+    // Check cache first
+    const cacheKey = `${timeframe}-${limit}`;
+    const cached = this.getFromCache('topVolume', cacheKey, this.CACHE_DURATION.topVolume);
+    if (cached) {
+      return cached;
+    }
+
     console.log(`🔍 Fetching top volume tokens (${timeframe})...`);
 
     // Convert numeric hours to proper timeframe format
@@ -536,6 +593,9 @@ class TapToolsService {
     if (tokens && Array.isArray(tokens)) {
       console.log(`📊 Found ${tokens.length} tokens with top volume in ${timeframe}`);
 
+      // Save to cache
+      this.saveToCache('topVolume', cacheKey, tokens);
+
       // Debug: Let's see the actual format of the first few tokens
       console.log('\n🔍 DEBUG: Sample token data:');
       tokens.slice(0, 3).forEach((token, i) => {
@@ -549,6 +609,13 @@ class TapToolsService {
   }
 
   async getTopTokenHolders(unit, page = 1, perPage = 100) {
+    // Check cache first
+    const cacheKey = `${unit}-${page}-${perPage}`;
+    const cached = this.getFromCache('holders', cacheKey, this.CACHE_DURATION.holders);
+    if (cached) {
+      return cached;
+    }
+
     console.log(`👥 Fetching top holders for token: ${unit.substring(0, 20)}...`);
 
     const holders = await this.makeTapToolsRequest('/token/holders/top', {
@@ -559,6 +626,8 @@ class TapToolsService {
 
     if (holders && Array.isArray(holders)) {
       console.log(`👥 Found ${holders.length} holders for token`);
+      // Save to cache
+      this.saveToCache('holders', cacheKey, holders);
       return holders;
     }
 
@@ -566,6 +635,13 @@ class TapToolsService {
   }
 
   async getTokenLiquidityPools(unit, adaOnly = 1) {
+    // Check cache first
+    const cacheKey = `${unit}-${adaOnly}`;
+    const cached = this.getFromCache('liquidity', cacheKey, this.CACHE_DURATION.liquidity);
+    if (cached) {
+      return cached;
+    }
+
     console.log(`💧 Fetching liquidity pools for token: ${unit.substring(0, 20)}...`);
 
     const pools = await this.makeTapToolsRequest('/token/pools', {
@@ -575,6 +651,8 @@ class TapToolsService {
 
     if (pools && Array.isArray(pools)) {
       console.log(`💧 Found ${pools.length} liquidity pools for token`);
+      // Save to cache
+      this.saveToCache('liquidity', cacheKey, pools);
       return pools;
     }
 
@@ -582,6 +660,12 @@ class TapToolsService {
   }
 
   async getTokenMarketCap(unit) {
+    // Check cache first
+    const cached = this.getFromCache('marketCap', unit, this.CACHE_DURATION.marketCap);
+    if (cached) {
+      return cached;
+    }
+
     console.log(`📊 Fetching market cap data for token: ${unit.substring(0, 20)}...`);
 
     const mcapData = await this.makeTapToolsRequest('/token/mcap', {
@@ -590,9 +674,13 @@ class TapToolsService {
 
     if (mcapData && mcapData.circSupply !== undefined && mcapData.circSupply !== null) {
       console.log(`📊 Market cap data: ${mcapData.ticker} - Circ Supply: ${(mcapData.circSupply || 0).toLocaleString()}, Price: $${mcapData.price}`);
+      // Save to cache
+      this.saveToCache('marketCap', unit, mcapData);
       return mcapData;
     } else if (mcapData) {
       console.log(`📊 Market cap data: ${mcapData.ticker} - Circ Supply: N/A, Price: $${mcapData.price || 'N/A'}`);
+      // Save to cache even if partial data
+      this.saveToCache('marketCap', unit, mcapData);
       return mcapData;
     }
 
@@ -1177,6 +1265,23 @@ class TapToolsService {
   async analyzeTokenWithTapToolsHolders(policyId, assetName = '', ticker = '', unit = '') {
     try {
       console.log(`🔍 Enhanced analysis for: ${ticker || 'Unknown'} (${policyId})`);
+
+      // Check if this is a known safe token
+      if (ticker && this.SAFE_TOKENS.has(ticker.toUpperCase())) {
+        console.log(`✅ ${ticker} is a known safe token - skipping detailed analysis`);
+        return {
+          summary: {
+            tokenName: ticker,
+            riskScore: 1,
+            verdict: 'SAFE',
+            topHolderPercentage: 0,
+            dataSource: 'Known Safe Token',
+            note: 'Established token with good reputation'
+          },
+          skipped: true,
+          reason: 'known_safe_token'
+        };
+      }
 
       // Get market cap data for accurate supply information
       const mcapData = await this.getTokenMarketCap(unit);
