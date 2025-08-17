@@ -48,6 +48,14 @@ class TapToolsService {
       topVolume: 10 * 60 * 1000 // 10 minutes for top volume
     };
 
+    // Rate limiting to prevent 429 errors
+    this.rateLimiter = {
+      lastCallTime: 0,
+      minDelay: 1000, // Minimum 1000ms between API calls (1 call per second max) to avoid 429 errors
+      queue: [],
+      processing: false
+    };
+
     // Known safe tokens to skip analysis
     this.SAFE_TOKENS = new Set([
       // Major tokens
@@ -545,8 +553,24 @@ class TapToolsService {
     });
   }
 
+  // Rate limiting helper
+  async enforceRateLimit() {
+    const now = Date.now();
+    const timeSinceLastCall = now - this.rateLimiter.lastCallTime;
+    
+    if (timeSinceLastCall < this.rateLimiter.minDelay) {
+      const delayNeeded = this.rateLimiter.minDelay - timeSinceLastCall;
+      await new Promise(resolve => setTimeout(resolve, delayNeeded));
+    }
+    
+    this.rateLimiter.lastCallTime = Date.now();
+  }
+
   async makeTapToolsRequest(endpoint, params = {}) {
     try {
+      // Enforce rate limiting
+      await this.enforceRateLimit();
+      
       // Track the API call
       this.trackApiCall(endpoint);
 
